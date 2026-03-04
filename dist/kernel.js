@@ -289,7 +289,8 @@ class AutonomicSystem {
             console.error(`[MiniClaw] Evolution trigger failed: ${e instanceof Error ? e.message : String(e)}`);
         }
     }
-    lastJobRuns = new Map();
+    // lastJobRuns is persisted in kernel state to survive restarts
+    // (no in-memory Map — read/write via kernel.state.heartbeat.lastJobRuns)
     async checkScheduledJobs() {
         try {
             const jobsFile = path.join(MINICLAW_DIR, 'jobs.json');
@@ -305,18 +306,22 @@ class AutonomicSystem {
                 return;
             const now = new Date();
             const currentMinuteKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            // Load persisted lastJobRuns from state (survives restarts)
+            const hbState = await this.kernel.getHeartbeatState();
+            const persistedRuns = hbState.lastJobRuns || {};
             for (const job of jobs) {
                 if (!job.enabled)
                     continue;
                 if (job.schedule?.kind !== 'cron' || !job.schedule.expr)
                     continue;
-                // Deduplicate: skip if already ran this minute
-                if (this.lastJobRuns.get(job.id) === currentMinuteKey)
+                // Deduplicate: skip if already ran this minute (persisted across restarts)
+                if (persistedRuns[job.id] === currentMinuteKey)
                     continue;
-                // Simple cron match (minute only for now)
+                // Simple cron match
                 if (this.cronMatchesNow(job.schedule.expr, now, job.schedule.tz)) {
                     await this.injectJobHeartbeat(job, now);
-                    this.lastJobRuns.set(job.id, currentMinuteKey);
+                    persistedRuns[job.id] = currentMinuteKey;
+                    await this.kernel.updateHeartbeatState({ lastJobRuns: persistedRuns });
                 }
             }
         }
@@ -421,10 +426,14 @@ class AutonomicSystem {
     async injectJobHeartbeat(job, now) {
         try {
             const ts = now.toISOString().replace('T', ' ').substring(0, 19);
-            const heartbeatFile = path.join(MINICLAW_DIR, 'HEARTBEAT.md');
-            const entry = `\n\n---\n## 🔔 Scheduled: ${job.name} (${ts})\n${job.payload.text}\n`;
-            await fs.appendFile(heartbeatFile, entry, 'utf-8');
-            console.error(`[MiniClaw] Scheduled job triggered: "${job.name}"`);
+            // Inject into pendingJobs queue in state — NOT into HEARTBEAT.md.
+            // HEARTBEAT.md is a read-only instruction config file.
+            // pendingJobs are consumed by assembleContext() on next AI call.
+            const hbState = await this.kernel.getHeartbeatState();
+            const pending = hbState.pendingJobs || [];
+            pending.push({ name: job.name, text: job.payload.text, ts });
+            await this.kernel.updateHeartbeatState({ pendingJobs: pending });
+            console.error(`[MiniClaw] Scheduled job queued: "${job.name}" at ${ts}`);
         }
         catch (e) {
             console.error(`[MiniClaw] InjectJobHeartbeat error: ${e instanceof Error ? e.message : String(e)}`);
@@ -1162,6 +1171,21 @@ export class ContextKernel {
             sections.push({ name: "entities", content: entityContent, priority: 5 });
         }
         sections.push({ name: "runtime", content: `## Runtime\nRuntime: agent=${runtime.agentId} | host=${os.hostname()} | os=${runtime.os} | node=${runtime.node} | time=${runtime.time}\nReasoning: off (hidden unless on/stream). Toggle /reasoning.\n\n## Silent Replies\nWhen you have nothing to say, respond with ONLY: NO_REPLY\n\n## Heartbeats\nHeartbeat prompt: Check for updates\nIf nothing needs attention, reply exactly: HEARTBEAT_OK\n`, priority: 5 });
+        // Inject pending scheduled jobs (queued by injectJobHeartbeat, consumed once here)
+        const hbStateForJobs = await this.getHeartbeatState();
+        const pendingJobs = hbStateForJobs.pendingJobs || [];
+        if (pendingJobs.length > 0) {
+            const jobsContent = pendingJobs
+                .map(j => `### 🔔 Scheduled: ${j.name} (${j.ts})\n${j.text}`)
+                .join('\n\n');
+            sections.push({
+                name: "pendingJobs",
+                content: `## ⏰ Scheduled Task Notifications\n${jobsContent}\n`,
+                priority: 6, // Higher than heartbeat, needs immediate attention
+            });
+            // Clear queue after injecting — jobs are one-shot notifications
+            await this.updateHeartbeatState({ pendingJobs: [] });
+        }
         // Priority 4: Heartbeat
         if (templates.heartbeat) {
             sections.push({
