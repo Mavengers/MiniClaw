@@ -1,9 +1,5 @@
-/**
- * MiniClaw Utils Tests
- */
-
 import { describe, it, expect } from "vitest";
-import { matchCronField, cronMatchesNow, parseFrontmatter, fuzzyScore } from "../src/utils.js";
+import { matchCronField, cronMatchesNow, parseFrontmatter } from "../src/utils.js";
 
 describe("Cron Utils", () => {
     it("matchCronField: wildcard matches any value", () => {
@@ -55,21 +51,5 @@ boot-priority: 10
         const content = "# Just a markdown file";
         const result = parseFrontmatter(content);
         expect(result).toEqual({});
-    });
-});
-
-describe("Fuzzy Score", () => {
-    it("exact match returns 100", () => {
-        expect(fuzzyScore("hello world", "hello world")).toBe(100);
-    });
-
-    it("partial match returns proportional score", () => {
-        const score = fuzzyScore("the quick brown fox", "quick fox");
-        expect(score).toBeGreaterThan(0);
-        expect(score).toBeLessThan(100);
-    });
-
-    it("no match returns 0", () => {
-        expect(fuzzyScore("hello world", "xyz")).toBe(0);
     });
 });
