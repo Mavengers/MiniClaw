@@ -154,7 +154,7 @@ MiniClaw 的 `templates/` 目录包含完整的数字生命基因组。每个文
 | **TOOLS.md** | 工具记忆 (Chr-5) | 技能使用经验与踩坑记录。工具参数规范和最佳实践。 |
 | **REFLECTION.md** | 反思维度 (Chr-6) | 周期性自省记录。行为模式分析和成长洞察。 |
 | **CONCEPTS.md** | 概念图谱 (Chr-7) | 知识组织与实体关系。领域概念的定义和关联。 |
-| **HEARTBEAT.md** | 脉搏系统 | 定时任务调度与生命节律。AutonomicSystem 的心跳检测。 |
+| **HEARTBEAT.md** | 脉搏系统 | 后台自主行为指令。由 macOS launchd 定期唤醒 `heartbeat.sh` 读取并通过 `claude -p` 执行。 |
 | **BOOTSTRAP.md** | 胚胎发育 | 首次启动的初始化协议。目录结构创建和模板复制逻辑。 |
 | **HORIZONS.md** | 进化蓝图 | 长期发展路线图。记录待探索的技术和未来的能力扩展方向。 |
 | **SUBAGENT.md** | 细胞分化 | 子代理创建规范。任务拆解和专注执行的协议定义。 |
@@ -189,9 +189,19 @@ MiniClaw 内置了自动任务调度系统，无需配置外部 crontab。
 
 ### 工作原理
 
+MiniClaw 有两套互补的调度机制：
+
+| 机制 | 触发方式 | 适用场景 |
+|:-----|:---------|:---------|
+| **kernel.ts** 内部调度 | 每分钟检查 `jobs.json` | 你在编辑器中工作时，任务以提醒的形式注入当前对话 |
+| **heartbeat.sh** 后台调度 | macOS launchd 每 30 分钟唤醒 | 你不在时，AI 仍可执行 `HEARTBEAT.md` 中的自主行为 |
+
+**jobs.json 定时任务流程**：
 1. **AutonomicSystem** 每分钟自动检查 `~/.miniclaw/jobs.json`
-2. 匹配当前时间的任务会注入到 `HEARTBEAT.md`
-3. 下次与 Agent 对话时，Agent 会看到并执行这些任务
+2. 匹配当前时间的任务会注入到 AI 的**当前对话上下文**中
+3. Agent 在下次回复时看到并执行这些任务
+
+> 任务去重信息持久化在 `state.json` 中，进程重启也不会重复触发。
 
 ### 添加定时任务
 
@@ -223,7 +233,7 @@ MiniClaw 内置了自动任务调度系统，无需配置外部 crontab。
 ]
 ```
 
-> **注意**：定时任务只在 MiniClaw 运行时生效。
+> **注意**：`jobs.json` 定时任务只在 MiniClaw MCP 进程运行时生效。后台自主行为（`HEARTBEAT.md`）由 launchd 独立调度，无需编辑器在线。
 
 ---
 

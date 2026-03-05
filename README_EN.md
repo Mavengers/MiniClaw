@@ -132,7 +132,7 @@ The `templates/` directory contains the complete digital life genome. Each file 
 | **TOOLS.md** | Tool Memory (Chr-5) | Skill usage experience and pitfall records. Tool parameter specifications and best practices. |
 | **REFLECTION.md** | Reflection Dimension (Chr-6) | Periodic self-reflection records. Behavioral pattern analysis and growth insights. |
 | **CONCEPTS.md** | Concept Graph (Chr-7) | Knowledge organization and entity relationships. Definitions and associations of domain concepts. |
-| **HEARTBEAT.md** | Pulse System | Scheduled task scheduling and life rhythm. AutonomicSystem heartbeat detection. |
+| **HEARTBEAT.md** | Pulse System | Background autonomous behavior instructions. Read by `heartbeat.sh` via macOS launchd and executed via `claude -p`. |
 | **BOOTSTRAP.md** | Embryonic Development | First-boot initialization protocol. Directory structure creation and template copying logic. |
 | **HORIZONS.md** | Evolution Blueprint | Long-term development roadmap. Records technologies to explore and future capability expansions. |
 | **SUBAGENT.md** | Cell Differentiation | Sub-agent creation specifications. Task decomposition and focused execution protocol definitions. |
@@ -161,40 +161,33 @@ npm run build
 
 ---
 
-## ⏰ Cron Scheduler
+## ⏰ Scheduled Tasks
 
-MiniClaw supports automatic execution of scheduled tasks via macOS/Linux `crontab` (e.g., daily reviews, scheduled checks).
+MiniClaw has two complementary scheduling mechanisms:
 
-### How It Works
+| Mechanism | Trigger | Use Case |
+|:----------|:--------|:---------|
+| **kernel.ts** internal scheduler | Checks `jobs.json` every minute | While you're working in the editor — tasks are injected into the current conversation |
+| **heartbeat.sh** background agent | macOS launchd wakes it every 30 min | When you're away — AI can still execute autonomous behaviors from `HEARTBEAT.md` |
 
-1. System cron runs the scheduler script every minute
-2. Script reads tasks from `~/.miniclaw/jobs.json`
-3. Matches current time → injects due tasks into `HEARTBEAT.md`
-4. Next time you chat with Agent, it sees and executes these instructions
+### How jobs.json Works
 
-### Setup
+1. **AutonomicSystem** checks `~/.miniclaw/jobs.json` every minute
+2. Due tasks are injected into the **AI's current conversation context**
+3. Agent sees and executes these tasks on its next reply
 
-```bash
-# 1. Edit crontab
-crontab -e
-
-# 2. Add this line (runs every minute)
-* * * * * /usr/local/bin/node /path/to/miniclaw/dist/scheduler.js >> /tmp/miniclaw-scheduler.log 2>&1
-```
-
-> **Tip**: Replace `/path/to/miniclaw` with your actual install path.
+> Deduplication state is persisted in `state.json`, so process restarts don't cause duplicate triggers.
 
 ### Managing Jobs
 
-Use the `miniclaw_jobs` tool in conversation:
+Edit `~/.miniclaw/jobs.json` directly, or ask in conversation:
 
 ```text
 "Add a daily task: check emails every morning at 9am"
-→ Agent calls miniclaw_jobs(action="add", name="Daily Email Check", cron="0 9 * * *", text="Check emails...")
-
-"List all scheduled tasks"
-→ Agent calls miniclaw_jobs(action="list")
+→ Agent updates jobs.json
 ```
+
+> **Note**: `jobs.json` scheduled tasks only work while the MiniClaw MCP process is running. Background autonomous behaviors (`HEARTBEAT.md`) are independently scheduled by launchd — no editor required.
 
 ---
 
