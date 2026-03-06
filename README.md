@@ -10,7 +10,7 @@
   </p>
 </div>
 
-> **🔥 MiniClaw 是一个独立的开源项目，灵感源自 [OpenClaw](https://github.com/openclaw/openclaw) 的微内核理念。**
+> **🔥 MiniClaw 是一个独立的开源项目，灵感源自 [OpenClaw](https://github.com/openclaw/openclaw) 。**
 > OpenClaw 专注于多渠道消息网关（WhatsApp/Telegram/Discord），MiniClaw 专注于**IDE 内 AI 副驾驶的记忆与进化**。二者场景互补，而非替代关系。
 
 ---
@@ -91,7 +91,7 @@ Stack: TypeScript, React, Docker
 - **写代码时**：进入极简模式 (Minimal Mode)。
 - **闲聊时**：进入全人格模式 (Full Persona Mode)。
 
-### 🫀 情绪状态系统 (Affect System) — v0.7.0
+### 🫀 情绪状态系统 (Affect System)
 MiniClaw 拥有**内在情绪**，影响其行为模式。
 - **alertness**：警觉度（受错误/痛觉影响上升）
 - **mood**：情绪效价（受成功/失败比影响）
@@ -100,7 +100,7 @@ MiniClaw 拥有**内在情绪**，影响其行为模式。
 
 > 系统在休息时自动恢复基线，高警觉+低情绪时进入保守模式，高好奇+正情绪时进入探索模式。
 
-### 💢 痛觉记忆 (Nociception) — v0.7.0
+### 💢 痛觉记忆 (Nociception)
 从负面经历中学习，形成保护性本能。
 - 痛觉记忆有 **7 天半衰期**，逐渐衰减
 - 记忆权重超过阈值时，自动触发回避行为
@@ -108,7 +108,7 @@ MiniClaw 拥有**内在情绪**，影响其行为模式。
 
 > 示例：*"上次 `npm run build` 失败了三次，我现在执行前会更谨慎地检查配置。"*
 
-### 🔍 主动探索 (Active Exploration) — v0.7.0
+### 🔍 主动探索 (Active Exploration)
 MiniClaw 会**主动感知**你的行为模式。
 | 检测信号 | 行动 |
 |:---|:---|

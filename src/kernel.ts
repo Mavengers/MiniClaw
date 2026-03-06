@@ -439,8 +439,63 @@ class AutonomicSystem {
 
             // Trigger DNA evolution (core mechanism)
             await this.triggerEvolution();
+
+            // ★ Autonomous Execution: fire HEARTBEAT.md via detected CLI
+            await this.executeAutonomous();
         } catch (e) {
             console.error(`[MiniClaw] Dream failed:`, e);
+        }
+    }
+
+    /** Detect the first available AI CLI and execute HEARTBEAT.md autonomously. */
+    private async executeAutonomous(): Promise<void> {
+        const heartbeatFile = path.join(MINICLAW_DIR, 'HEARTBEAT.md');
+        let prompt: string;
+        try { prompt = await fs.readFile(heartbeatFile, 'utf-8'); } catch { return; }
+
+        // Skip empty / comments-only heartbeats
+        const meaningful = prompt.split('\n').filter(l => l.trim() && !l.trim().startsWith('#')).join('');
+        if (meaningful.length < 10) return;
+
+        // Auto-detect available CLI (order: claude, gemini)
+        const cliCandidates = [
+            { cmd: 'claude', args: ['-p', '--output-format', 'text'] },
+            { cmd: 'gemini', args: ['-p'] },
+        ];
+
+        let selectedCli: { cmd: string; args: string[] } | null = null;
+        for (const cli of cliCandidates) {
+            try {
+                await execAsync(`which ${cli.cmd}`);
+                selectedCli = cli;
+                break;
+            } catch { /* not installed, try next */ }
+        }
+        if (!selectedCli) {
+            console.error('[MiniClaw] 💤 No AI CLI found (claude/gemini). Autonomous execution skipped.');
+            return;
+        }
+
+        console.error(`[MiniClaw] 🧠 Autonomous exec via '${selectedCli.cmd}'...`);
+        const logDir = path.join(MINICLAW_DIR, 'logs');
+        await fs.mkdir(logDir, { recursive: true }).catch(() => { });
+        const logFile = path.join(logDir, 'heartbeat.log');
+        const ts = new Date().toISOString();
+
+        try {
+            const fullArgs = [...selectedCli.args, prompt];
+            const { stdout, stderr } = await execAsync(
+                `${selectedCli.cmd} ${fullArgs.map(a => `'${a.replace(/'/g, "'\\''")}'`).join(' ')}`,
+                { timeout: 120_000, maxBuffer: 512 * 1024 }
+            );
+            const result = (stdout || stderr || '').trim();
+            const logEntry = `[${ts}] CLI=${selectedCli.cmd} | OK | ${result.slice(0, 200)}\n`;
+            await fs.appendFile(logFile, logEntry).catch(() => { });
+            console.error(`[MiniClaw] 🧠 Autonomous exec complete (${result.length} chars)`);
+        } catch (e: any) {
+            const logEntry = `[${ts}] CLI=${selectedCli.cmd} | FAIL | ${e.message?.slice(0, 200)}\n`;
+            await fs.appendFile(logFile, logEntry).catch(() => { });
+            console.error(`[MiniClaw] 🧠 Autonomous exec failed: ${e.message?.slice(0, 100)}`);
         }
     }
 

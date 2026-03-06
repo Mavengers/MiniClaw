@@ -58,9 +58,17 @@ cmd_heartbeat() {
     echo $$ > "$HEARTBEAT_LOCK"
     trap "rm -f $HEARTBEAT_LOCK" EXIT
 
-    # Check claude CLI
-    if ! command -v claude &>/dev/null; then
-        echo "[$(date)] Error: 'claude' command not found." >> "$HEARTBEAT_LOG"
+    # Auto-detect AI CLI (claude → gemini)
+    CLI_CMD=""
+    CLI_ARGS=""
+    if command -v claude &>/dev/null; then
+        CLI_CMD="claude"
+        CLI_ARGS="-p --output-format text"
+    elif command -v gemini &>/dev/null; then
+        CLI_CMD="gemini"
+        CLI_ARGS="-p"
+    else
+        echo "[$(date)] Error: No AI CLI found (tried: claude, gemini)." >> "$HEARTBEAT_LOG"
         exit 1
     fi
 
@@ -70,14 +78,14 @@ cmd_heartbeat() {
         exit 0
     fi
 
-    echo "[$(date)] Running heartbeat..." >> "$HEARTBEAT_LOG"
+    echo "[$(date)] Running heartbeat via $CLI_CMD..." >> "$HEARTBEAT_LOG"
 
     local prompt
     prompt=$(cat "$HEARTBEAT_FILE")
 
-    claude -p "$prompt" >> "$HEARTBEAT_LOG" 2>&1 \
-        && echo "[$(date)] Heartbeat completed." >> "$HEARTBEAT_LOG" \
-        || echo "[$(date)] Heartbeat failed." >> "$HEARTBEAT_LOG"
+    $CLI_CMD $CLI_ARGS "$prompt" >> "$HEARTBEAT_LOG" 2>&1 \
+        && echo "[$(date)] Heartbeat completed ($CLI_CMD)." >> "$HEARTBEAT_LOG" \
+        || echo "[$(date)] Heartbeat failed ($CLI_CMD)." >> "$HEARTBEAT_LOG"
 }
 
 # =============================================================================
