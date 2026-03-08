@@ -157,20 +157,6 @@ export interface Analytics {
     fileChanges: Record<string, number>;  // file modification frequency
 }
 
-// === Pain Memory (Nociception) ===
-// Records negative experiences to form protective instincts
-interface PainMemory {
-    context: string;      // What situation caused the pain
-    action: string;       // What action led to it
-    consequence: string;  // What was the negative outcome
-    intensity: number;    // Pain intensity 0-1
-    timestamp: string;    // When it happened
-    weight: number;       // Current avoidance weight (decays over time)
-}
-
-const PAIN_DECAY_DAYS = 7;  // Pain memory half-life (days)
-const PAIN_THRESHOLD = 0.3; // Minimum weight to trigger avoidance
-
 // === Persistent State ===
 interface HeartbeatState {
     lastHeartbeat: string | null;
@@ -179,17 +165,13 @@ interface HeartbeatState {
     dailyLogBytes: number;
     needsSubconsciousReflex?: boolean;
     triggerTool?: string;
-    pendingJobs?: Array<{ name: string; text: string; ts: string }>; // Added for scheduled jobs
-    lastJobRuns?: Record<string, string>; // Added for scheduled jobs
 }
 
 interface MiniClawState {
     analytics: Analytics;
     previousHashes: ContentHashes;
     heartbeat: HeartbeatState;
-    genomeBaseline?: ContentHashes;
     attentionWeights: Record<string, number>; // Hebbian weights for context sections
-    painMemory: PainMemory[]; // Nociception: protective memory of negative experiences
 }
 
 const DEFAULT_HEARTBEAT: HeartbeatState = {
@@ -657,8 +639,7 @@ export class ContextKernel {
     private skillCache = new SkillCache();
     readonly entityStore = new EntityStore();
     private autonomicSystem: AutonomicSystem;
-    private bootErrors: string[] = [];
-    private currentGenome: ContentHashes | null = null; // Cache for reuse during boot
+
     private state: MiniClawState = {
         analytics: {
             toolCalls: {}, bootCount: 0,
@@ -669,7 +650,6 @@ export class ContextKernel {
         previousHashes: {},
         heartbeat: { ...DEFAULT_HEARTBEAT },
         attentionWeights: {},
-        painMemory: [],
     };
     private stateLoaded = false;
     private budgetTokens: number;
@@ -701,7 +681,7 @@ export class ContextKernel {
             }
             if (data.previousHashes) this.state.previousHashes = data.previousHashes;
             if (data.heartbeat) this.state.heartbeat = { ...DEFAULT_HEARTBEAT, ...data.heartbeat };
-            if (data.genomeBaseline) this.state.genomeBaseline = data.genomeBaseline;
+
             if (data.attentionWeights) {
                 this.state.attentionWeights = data.attentionWeights;
             } else {
@@ -783,45 +763,7 @@ export class ContextKernel {
         });
     }
 
-    // === Affect & Pain Management ===
 
-    async recordPain(pain: Omit<PainMemory, 'timestamp' | 'weight'>): Promise<void> {
-        await this.mutateState(state => {
-            state.painMemory.push({ ...pain, timestamp: nowIso(), weight: pain.intensity });
-            if (state.painMemory.length > 50) state.painMemory = state.painMemory.slice(-50);
-        });
-        console.error(`[MiniClaw] 💢 Pain recorded: ${pain.action}`);
-    }
-
-    // Check if there's pain memory for given context/action (with decay)
-    async hasPainMemory(context: string, action: string): Promise<boolean> {
-        await this.loadState();
-        for (const pain of this.state.painMemory) {
-            const decayedWeight = pain.weight * Math.pow(0.5, daysSince(pain.timestamp) / PAIN_DECAY_DAYS);
-            if (decayedWeight > PAIN_THRESHOLD) {
-                if (context.includes(pain.context) || pain.context.includes(context) ||
-                    action === pain.action || action.includes(pain.action) || pain.action.includes(action)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    // ★ Genesis Logger
-    async logGenesis(event: string, target: string, type?: string): Promise<void> {
-        const genesisFile = path.join(MINICLAW_DIR, "memory", "genesis.jsonl");
-        const entry = {
-            ts: new Date().toISOString(),
-            event,
-            target,
-            ...(type ? { type } : {})
-        };
-        try {
-            await this.ensureDirs();
-            await fs.appendFile(genesisFile, JSON.stringify(entry) + '\n', "utf-8");
-        } catch { /* logs should not break execution */ }
-    }
 
     async computeVitals(todayContent?: string): Promise<Record<string, string | number>> {
         await this.loadState();
@@ -872,7 +814,7 @@ export class ContextKernel {
     }
 
     async boot(mode: ContextMode = { type: "full" }): Promise<string> {
-        this.bootErrors = [];
+
         const bootStart = Date.now();
 
         // 1. Initialize environment + load state
@@ -886,28 +828,10 @@ export class ContextKernel {
         this.decayAttention();
         await this.saveState();
 
-        // ★ Genetic Proofreading (L-Immun) - Universal health check
-        this.currentGenome = await this.calculateGenomeHash();
-        const hasBaseline = this.state.genomeBaseline && Object.keys(this.state.genomeBaseline).length > 0;
-
-        if (!hasBaseline) {
-            this.state.genomeBaseline = this.currentGenome;
-            await this.saveState(); // Ensure baseline is persisted on first boot
-        } else {
-            const deviations = this.proofreadGenome(this.currentGenome, this.state.genomeBaseline!);
-            if (deviations.length > 0) {
-                this.bootErrors.push(`🧬 Immune System: ${deviations.join(', ')}`);
-            }
-        }
-
         // --- MODE: MINIMAL (Sub-Agent) Task Setup ---
         let subagentTaskContent = "";
         if (mode.type === "minimal") {
             subagentTaskContent += `# Subagent Context\n\n`;
-            if (this.bootErrors.length > 0) {
-                const healthLines = this.bootErrors.map(e => `> ${e}`).join('\n');
-                subagentTaskContent += `> [!CAUTION]\n> SYSTEM HEALTH WARNINGS:\n${healthLines}\n\n`;
-            }
             if (mode.task) {
                 subagentTaskContent += `## 🎯 YOUR ASSIGNED TASK\n${mode.task}\n\n`;
             }
@@ -1239,17 +1163,12 @@ export class ContextKernel {
         if (delta.changed.length > 0) changes.push(`✏️ ${delta.changed.join(', ')}`);
         if (delta.newSections.length > 0) changes.push(`🆕 ${delta.newSections.join(', ')}`);
 
-        const healthWarnings = await this.checkFileHealth();
-        const errorLine = this.bootErrors.length > 0 ? `⚠️ Errors (${this.bootErrors.length}): ${this.bootErrors.slice(0, 3).join('; ')}` : null;
-
         const context = [
             `# Project Context\n\nThe following project context files have been loaded:\n\n`,
             compiled.output,
             `\n---\n`,
             footerParts.filter(Boolean).join(' | '),
             changes.length > 0 ? `\n📊 ${changes.join(' | ')}` : '',
-            healthWarnings.length > 0 ? `\n🏥 ${healthWarnings.join(' | ')}` : '',
-            errorLine ? `\n${errorLine}` : '',
             `\n\n---\n📏 Context Size: ${compiled.totalChars} chars (~${compiled.totalTokens} tokens)\n`,
         ].join('');
 
@@ -1480,29 +1399,7 @@ export class ContextKernel {
         return result;
     }
 
-    // === Self-Evolution: File Health Check ===
 
-    private async checkFileHealth(): Promise<string[]> {
-        const warnings: string[] = [];
-        const now = Date.now();
-        const files = ["MEMORY.md", "USER.md", "SOUL.md"];
-
-        const results = await Promise.all(files.map(async (name) => {
-            try {
-                const stat = await fs.stat(path.join(MINICLAW_DIR, name));
-                const daysSince = Math.round((now - stat.mtimeMs) / (1000 * 60 * 60 * 24));
-                return { name, days: daysSince };
-            } catch { return null; }
-        }));
-
-        for (const r of results) {
-            if (!r) continue;
-            if (r.days > 30) warnings.push(`🔴 ${r.name}: ${r.days}d stale`);
-            else if (r.days > 14) warnings.push(`⚠️ ${r.name}: ${r.days}d old`);
-        }
-
-        return warnings;
-    }
 
 
     // === Budget Compiler ===
@@ -1600,69 +1497,7 @@ export class ContextKernel {
         return skeleton;
     }
 
-    // === Genetic Proofreading (L-Immun) ===
 
-    private async calculateGenomeHash(): Promise<ContentHashes> {
-        const hashes: ContentHashes = {};
-        const germlineDNA = ["IDENTITY.md", "SOUL.md", "AGENTS.md"];
-        for (const name of germlineDNA) {
-            try {
-                const content = await fs.readFile(path.join(MINICLAW_DIR, name), "utf-8");
-                hashes[name] = hashString(content);
-            } catch { /* ignore missing germline files */ }
-        }
-        return hashes;
-    }
-
-    private proofreadGenome(current: ContentHashes, baseline: ContentHashes): string[] {
-        const deviations: string[] = [];
-        for (const [name, hash] of Object.entries(baseline)) {
-            if (!(name in current)) {
-                deviations.push(`Missing: ${name}`);
-            } else if (current[name] !== hash) {
-                deviations.push(`Mutated: ${name}`);
-            }
-        }
-        return deviations;
-    }
-
-    async updateGenomeBaseline(): Promise<void> {
-        const backupDir = path.join(MINICLAW_DIR, ".backup", "genome");
-        await fs.mkdir(backupDir, { recursive: true });
-
-        const current = await this.calculateGenomeHash();
-        this.state.genomeBaseline = current;
-
-        for (const name of Object.keys(current)) {
-            try {
-                const content = await fs.readFile(path.join(MINICLAW_DIR, name), "utf-8");
-                await atomicWrite(path.join(backupDir, name), content);
-            } catch { /* skip missing */ }
-        }
-
-        await this.saveState();
-        console.error(`[MiniClaw] Genome baseline updated and backed up for: ${Object.keys(current).join(', ')}`);
-    }
-
-    async restoreGenome(): Promise<string[]> {
-        const baseline = this.state.genomeBaseline || {};
-        const current = await this.calculateGenomeHash();
-        const deviations = this.proofreadGenome(current, baseline);
-        const backupDir = path.join(MINICLAW_DIR, ".backup", "genome");
-        const restored: string[] = [];
-
-        for (const dev of deviations) {
-            const fileName = dev.split(': ')[1];
-            if (!fileName) continue;
-            try {
-                const backupPath = path.join(backupDir, fileName);
-                const content = await fs.readFile(backupPath, "utf-8");
-                await atomicWrite(path.join(MINICLAW_DIR, fileName), content);
-                restored.push(fileName);
-            } catch { /* backup missing or restore failed */ }
-        }
-        return restored;
-    }
 
     // === Delta Detection ===
 
@@ -1743,7 +1578,7 @@ export class ContextKernel {
                 const content = await fs.readFile(filePath, "utf-8");
                 // Corruption check: if core file is suspiciously small, recover
                 if (CORE_RECOVER.has(name) && content.trim().length < 10) {
-                    this.bootErrors.push(`🔧 ${name}: corrupted (${content.length}B), auto-recovering`);
+                    console.error(`🔧 ${name}: corrupted (${content.length}B), auto-recovering`);
                     try {
                         const tplDir = path.join(path.resolve(MINICLAW_DIR, ".."), ".miniclaw-templates");
                         // Fallback: check common template locations
@@ -1759,7 +1594,7 @@ export class ContextKernel {
                 return content;
             } catch (e) {
                 if (name !== "BOOTSTRAP.md" && name !== "SUBAGENT.md" && name !== "HEARTBEAT.md") {
-                    this.bootErrors.push(`${name}: ${(e as Error).message?.split('\n')[0] || 'read failed'}`);
+                    console.error(`${name}: ${(e as Error).message?.split('\n')[0] || 'read failed'}`);
                 }
                 return "";
             }
@@ -1837,7 +1672,7 @@ export class ContextKernel {
                 }
             }
         } catch (e) {
-            this.bootErrors.push(`🔧 Skill sync failed: ${(e as Error).message}`);
+            console.error(`🔧 Skill sync failed: ${(e as Error).message}`);
         }
     }
 
@@ -1853,7 +1688,7 @@ export class ContextKernel {
                 }
             }
         } catch (e) {
-            this.bootErrors.push(`🔧 Template sync failed: ${(e as Error).message}`);
+            console.error(`🔧 Template sync failed: ${(e as Error).message}`);
         }
     }
 
@@ -1944,7 +1779,7 @@ export class ContextKernel {
             };
             await fs.writeFile(pulseFile, JSON.stringify(pulseData, null, 2), 'utf-8');
         } catch (e) {
-            this.bootErrors.push(`💓 Pulse failed: ${(e as Error).message}`);
+            console.error(`💓 Pulse failed: ${(e as Error).message}`);
         }
     }
 

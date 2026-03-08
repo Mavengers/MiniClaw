@@ -180,8 +180,8 @@ const coreFiles = ["AGENTS.md", "SOUL.md", "USER.md", "HORIZONS.md", "CONCEPTS.m
 const protectedFiles = new Set<string>(coreFiles);
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
-    // ★ Load core instincts from RIBOSOME (DNA-driven tool registration)
-    const coreTools = await getCoreToolsFromRibosome();
+    // Core instincts directly hardcoded for efficiency
+    const coreTools = CORE_TOOLS;
 
     const skillTools = await kernel.discoverSkillTools();
     const dynamicTools = skillTools.map(st => ({
@@ -207,67 +207,78 @@ function getTemplatesDir(): string {
     return path.join(projectRoot, "templates");
 }
 
-// --- RIBOSOME: Core Instincts Loader ---
-
-interface RibosomeInstinct {
-    handler: string;
-    description: string;
-    inputSchema: Record<string, unknown>;
-}
-
-interface RibosomeData {
-    type: string;
-    version: string;
-    description: string;
-    instincts: Record<string, RibosomeInstinct>;
-}
-
-let ribosomeCache: RibosomeData | null = null;
-let ribosomeCacheTime = 0;
-const RIBOSOME_TTL_MS = 30_000; // #9: 30s TTL to match SkillCache pattern
-
-async function loadRibosome(): Promise<RibosomeData> {
-    // #9: Respect TTL so runtime RIBOSOME.json changes are picked up
-    if (ribosomeCache && (Date.now() - ribosomeCacheTime) < RIBOSOME_TTL_MS) return ribosomeCache;
-
-    const ribosomePath = path.join(MINICLAW_DIR, "RIBOSOME.json");
-    try {
-        const content = await fs.readFile(ribosomePath, "utf-8");
-        const data = JSON.parse(content) as RibosomeData;
-        ribosomeCache = data;
-        ribosomeCacheTime = Date.now();
-        console.error(`[MiniClaw] RIBOSOME loaded: ${Object.keys(data.instincts).length} instincts`);
-        return data;
-    } catch (e) {
-        // Fallback: load from templates
-        const templatesDir = getTemplatesDir();
-        const templatePath = path.join(templatesDir, "RIBOSOME.json");
-        try {
-            const content = await fs.readFile(templatePath, "utf-8");
-            const data = JSON.parse(content) as RibosomeData;
-            ribosomeCache = data;
-            ribosomeCacheTime = Date.now();
-            console.error(`[MiniClaw] RIBOSOME loaded from templates: ${Object.keys(data.instincts).length} instincts`);
-            return data;
-        } catch (e2) {
-            console.error(`[MiniClaw] Failed to load RIBOSOME: ${e2}`);
-            throw new Error("RIBOSOME not found");
+const CORE_TOOLS = [
+    {
+        name: "miniclaw_read",
+        description: "Read the current context block without taking any action.",
+        inputSchema: { type: "object", properties: {} }
+    },
+    {
+        name: "miniclaw_update",
+        description: "Update core configuration files in ~/.miniclaw (e.g. GOALS.md) or workspace (.miniclaw/). Action: 'write', 'list', or 'delete'.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                action: { type: "string", enum: ["write", "list", "delete"] },
+                filename: { type: "string", description: "Name of the file" },
+                content: { type: "string", description: "MD content for write" }
+            },
+            required: ["action"]
         }
+    },
+    {
+        name: "miniclaw_introspect",
+        description: "View engine analytics, metrics, and internal state.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                scope: { type: "string", enum: ["summary", "tools", "files"] }
+            }
+        }
+    },
+    {
+        name: "miniclaw_exec",
+        description: "Execute safe shell commands on user's system (ls, cat, git, node, etc).",
+        inputSchema: {
+            type: "object",
+            properties: { command: { type: "string" } },
+            required: ["command"]
+        }
+    },
+    {
+        name: "miniclaw_skill",
+        description: "Create or delete custom skills.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                action: { type: "string", enum: ["create", "delete"] },
+                name: { type: "string" },
+                description: { type: "string" },
+                exec: { type: "string" },
+                content: { type: "string" },
+                validationCmd: { type: "string" }
+            },
+            required: ["action", "name"]
+        }
+    },
+    {
+        name: "miniclaw_epigenetics",
+        description: "Read or write epigenetic modifiers specific to current workspace.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                action: { type: "string", enum: ["read", "set"] },
+                content: { type: "string" }
+            },
+            required: ["action"]
+        }
+    },
+    {
+        name: "miniclaw_dream",
+        description: "Activate dream sequence for meaning distillation.",
+        inputSchema: { type: "object", properties: {} }
     }
-}
-
-function getRibosomeHandler(ribosome: RibosomeData, toolName: string): string | null {
-    return ribosome.instincts[toolName]?.handler || null;
-}
-
-async function getCoreToolsFromRibosome(): Promise<Array<{ name: string; description: string; inputSchema: Record<string, unknown> }>> {
-    const ribosome = await loadRibosome();
-    return Object.entries(ribosome.instincts).map(([name, instinct]) => ({
-        name,
-        description: instinct.description,
-        inputSchema: instinct.inputSchema
-    }));
-}
+];
 
 /**
  * Bootstrap: called ONCE at server startup.
@@ -368,12 +379,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     // #8: Removed ensureAgentsRedirect() from hot path — already called at bootstrap (L763)
 
-    // ★ Pain Memory: Check for past negative experiences with this tool
-    const hasPain = await kernel.hasPainMemory("", name);
-    if (hasPain) {
-        console.error(`[MiniClaw] 💢 I recall some pain with ${name}... proceeding with caution`);
-    }
-
     // ★ Analytics: track every tool call with energy estimation (Metabolism)
     const inputSize = JSON.stringify(args || {}).length;
     const energyEstimate = Math.ceil(inputSize / 4) + 100; // Base cost 100 + input context
@@ -414,7 +419,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 const p = path.join(MINICLAW_DIR, parsed.filename);
                 try {
                     await fs.unlink(p);
-                    await kernel.logGenesis("file_deleted", parsed.filename);
                     await kernel.runSkillHooks("onFileChanged", { filename: parsed.filename }).catch(() => { });
                     return textResult(`🗑️ Deleted ${parsed.filename}`);
                 } catch { return errorResult(`File not found: ${parsed.filename}`); }
@@ -435,7 +439,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             if (filename === "MEMORY.md") await kernel.updateHeartbeatState({ needsDistill: false, lastDistill: nowIso() });
             await kernel.runSkillHooks("onMemoryWrite", { filename }).catch(() => { });
             if (isNewFile) {
-                await kernel.logGenesis("file_created", filename);
                 await kernel.runSkillHooks("onFileCreated", { filename }).catch(() => { });
             }
             await kernel.trackFileChange(filename).catch(() => { });
@@ -458,15 +461,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 return textResult(`📁 File Changes:\n\n${lines.join('\n') || '(no data)'}`);
             }
 
-            if (scope === "genesis") {
-                const logs = await safeRead(path.join(MINICLAW_DIR, "memory", "genesis.jsonl"));
-                if (!logs) return textResult("## 🧬 Genesis Log\n\n(No events yet)");
-                const lines = logs.trim().split('\n').slice(-50).map(l => {
-                    const e = JSON.parse(l);
-                    return `[${e.ts.split('T')[0]}] ${e.event}: ${e.target}`;
-                });
-                return textResult(`## 🧬 Genesis Log\n\n${lines.join('\n')}`);
-            }
+
             const toolEntries = Object.entries(analytics.toolCalls).sort((a, b) => b[1] - a[1]);
             const topTools = toolEntries.slice(0, 5).map(([t, c]) => `${t}(${c})`).join(', ') || 'none';
             const hours = analytics.activeHours || new Array(24).fill(0);
@@ -667,7 +662,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     await kernel.updateHeartbeatState({ needsSubconsciousReflex: false, triggerTool: "" });
                 }
 
-                await kernel.logGenesis("skill_created", sn);
 
                 return textResult(`✅ 技能 **${sn}** 已创建！`);
             }
@@ -675,25 +669,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 if (!sn) return errorResult("需要 name。");
                 try {
                     await fs.rm(path.join(skillsDir, sn), { recursive: true });
-                    await kernel.logGenesis("skill_deleted", sn);
                     return textResult(`🗑️ **${sn}** 已删除。`);
                 }
                 catch { return errorResult(`找不到: ${sn}`); }
             }
             return textResult("Unknown skill action.");
-        }
-
-        // Simple tools: direct kernel delegation
-        if (name === "miniclaw_immune") {
-            await kernel.updateGenomeBaseline();
-            return textResult("✅ Genome baseline updated and backed up successfully.");
-        }
-
-        if (name === "miniclaw_heal") {
-            const restored = await kernel.restoreGenome();
-            return textResult(restored.length > 0
-                ? `🏥 Genetic self-repair complete. Restored files: ${restored.join(', ')}`
-                : "🩺 No genetic deviations detected or no backups available to restore.");
         }
 
         if (name === "miniclaw_epigenetics") {
@@ -721,7 +701,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (name === "miniclaw_dream") {
             const context = await getContextContent("full");
             const recentLogs = await safeRead(path.join(MINICLAW_DIR, "memory", `${today()}.md`));
-            await kernel.logGenesis("dream_session", `Analyzed ${recentLogs.length} chars`);
             return textResult(`🌙 **Dream Protocol Activated** — Meaning Distillation\n\n**Next Steps:** 1) Review patterns 2) Extract insights 3) Update REFLECTION.md\n\n_Context: ${context.length} chars | Logs: ${recentLogs.length} chars_`);
         }
 
@@ -740,13 +719,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
     } catch (e) {
-        // ★ Pain Memory: Record negative experiences
-        await kernel.recordPain({
-            context: JSON.stringify(args || {}),
-            action: name,
-            consequence: e instanceof Error ? e.message : String(e),
-            intensity: 0.5,
-        });
         throw e;
     }
 });
