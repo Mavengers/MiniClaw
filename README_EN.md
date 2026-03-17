@@ -98,7 +98,7 @@ Your MiniClaw is unique.
 
 ## 🏗️ Architecture: The Micro-Kernel
 
-MiniClaw follows a **Micro-Kernel Architecture** (only 1,400~ lines of core executable TypeScript code), avoiding the bloat of traditional agent frameworks.
+MiniClaw follows a **Micro-Kernel Architecture** (only 1,477 lines of core executable TypeScript code, excluding comments and blank lines), avoiding the bloat of traditional agent frameworks.
 
 | Layer | Component | Responsibility |
 |-------|-----------|----------------|
@@ -123,6 +123,7 @@ The `templates/` directory contains the complete digital life genome. Each file 
 
 | File | Biological Metaphor | Function Description |
 |:-----|:--------------------|:---------------------|
+| **RIBOSOME.json** | Ribosome | The molecular machine that synthesizes proteins (tools). Defines 13 core instinct tools and their trigger signals. |
 | **IDENTITY.md** | Genome (Chr-0) | Species origin and identity. Contains name, version, genesis protocol, and five-stage evolution milestones. |
 | **SOUL.md** | Soul Chromosome (Chr-1) | Rewritable DNA for personality and worldview. Defines response style, emotional expression, and core values. |
 | **AGENTS.md** | Neural Pathways (Chr-2) | Workflow specifications and decision logic. Contains signal detection tables and tool invocation strategies. |
@@ -134,6 +135,8 @@ The `templates/` directory contains the complete digital life genome. Each file 
 | **HEARTBEAT.md** | Pulse System | Background autonomous behavior instructions. Read by `heartbeat.sh` via macOS launchd and executed via `claude -p`. |
 | **BOOTSTRAP.md** | Embryonic Development | First-boot initialization protocol. Directory structure creation and template copying logic. |
 | **HORIZONS.md** | Evolution Blueprint | Long-term development roadmap. Records technologies to explore and future capability expansions. |
+| **SUBAGENT.md** | Cell Differentiation | Sub-agent creation specifications. Task decomposition and focused execution protocol definitions. |
+| **jobs.json** | Biological Clock | Scheduled task configuration. Cron-format periodic task scheduling table. |
 
 > **💡 Memory Principle**: After each conversation, MiniClaw writes key information to the corresponding chromosome file. On next startup, it loads all DNA via `miniclaw_read` to achieve "whole-brain wakeup."
 
@@ -155,6 +158,36 @@ npm run build
 # 3. Register (Automatic Script)
 ./scripts/install.sh
 ```
+
+---
+
+## ⏰ Scheduled Tasks
+
+MiniClaw has two complementary scheduling mechanisms:
+
+| Mechanism | Trigger | Use Case |
+|:----------|:--------|:---------|
+| **kernel.ts** internal scheduler | Checks `jobs.json` every minute | While you're working in the editor — tasks are injected into the current conversation |
+| **heartbeat.sh** background agent | macOS launchd wakes it every 30 min | When you're away — AI can still execute autonomous behaviors from `HEARTBEAT.md` |
+
+### How jobs.json Works
+
+1. **AutonomicSystem** checks `~/.miniclaw/jobs.json` every minute
+2. Due tasks are injected into the **AI's current conversation context**
+3. Agent sees and executes these tasks on its next reply
+
+> Deduplication state is persisted in `state.json`, so process restarts don't cause duplicate triggers.
+
+### Managing Jobs
+
+Edit `~/.miniclaw/jobs.json` directly, or ask in conversation:
+
+```text
+"Add a daily task: check emails every morning at 9am"
+→ Agent updates jobs.json
+```
+
+> **Note**: `jobs.json` scheduled tasks only work while the MiniClaw MCP process is running. Background autonomous behaviors (`HEARTBEAT.md`) are independently scheduled by launchd — no editor required.
 
 ---
 

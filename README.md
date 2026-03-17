@@ -11,7 +11,7 @@
 </div>
 
 > **🔥 MiniClaw 是一个独立的开源项目，灵感源自 [OpenClaw](https://github.com/openclaw/openclaw) 。**
-> MiniClaw 专注于**IDE 内 AI 副驾驶的记忆与进化**。
+> OpenClaw 专注于多渠道消息网关（WhatsApp/Telegram/Discord），MiniClaw 专注于**IDE 内 AI 副驾驶的记忆与进化**。二者场景互补，而非替代关系。
 
 ---
 
@@ -93,12 +93,20 @@ Stack: TypeScript, React, Docker
 
 ### 🫀 情绪状态系统 (Affect System)
 MiniClaw 拥有**内在情绪**，影响其行为模式。
-- **alertness**：警觉度（受错误执行影响上升）
+- **alertness**：警觉度（受错误/痛觉影响上升）
 - **mood**：情绪效价（受成功/失败比影响）
 - **curiosity**：好奇驱动力（影响主动探索倾向）
 - **confidence**：行动信心（受预测准确度影响）
 
 > 系统在休息时自动恢复基线，高警觉+低情绪时进入保守模式，高好奇+正情绪时进入探索模式。
+
+### 💢 痛觉记忆 (Nociception)
+从负面经历中学习，形成保护性本能。
+- 痛觉记忆有 **7 天半衰期**，逐渐衰减
+- 记忆权重超过阈值时，自动触发回避行为
+- 影响情绪状态（提升警觉、降低情绪和好奇心）
+
+> 示例：*"上次 `npm run build` 失败了三次，我现在执行前会更谨慎地检查配置。"*
 
 ### 🔍 主动探索 (Active Exploration)
 MiniClaw 会**主动感知**你的行为模式。
@@ -120,11 +128,11 @@ MiniClaw 会**主动感知**你的行为模式。
 
 ## 🏗️ 架构：微内核 (Micro-Kernel)
 
-MiniClaw 采用 **微内核架构** (约 1400~ 行可执行代码)，避免了传统 Agent 框架的臃肿。
+MiniClaw 采用 **微内核架构** (仅 1477 行核心 TypeScript 可执行代码，不含注释和空行)，避免了传统 Agent 框架的臃肿。
 
 | 层级 | 组件 | 职责 |
 |-------|-----------|----------------|
-| **Kernel** (大脑) | `src/kernel.ts` | 负责 ACE、情绪系统、实体图谱、技能加载和执行沙箱。 |
+| **Kernel** (大脑) | `src/kernel.ts` | 负责 ACE、情绪系统、痛觉记忆、实体图谱、技能加载和执行沙箱。 |
 | **Evolution** (进化) | `src/evolution.ts` | DNA 进化引擎，甲基化特征、模式检测与自动学习。 |
 | **Interface** (身体) | `src/index.ts` | 负责 MCP 协议实现、工具分发、蜂巢意识 IPC 和心跳检测。 |
 | **DNA** (基因) | `templates/*.md` | 定义性格、成长欲望、创世记忆和启动协议。 |
@@ -146,6 +154,7 @@ MiniClaw 的 `templates/` 目录包含完整的数字生命基因组。每个文
 
 | 文件 | 生物学隐喻 | 功能描述 |
 |:-----|:-----------|:---------|
+| **RIBOSOME.json** | 核糖体 | 合成蛋白质（工具）的分子机器。定义 13 个核心本能工具及其触发信号。 |
 | **IDENTITY.md** | 基因组 (Chr-0) | 物种起源与身份标识。包含名称、版本、创世协议和五阶段进化里程碑。 |
 | **SOUL.md** | 灵魂染色体 (Chr-1) | 性格与三观的可重写 DNA。定义回复风格、情感表达和核心价值观。 |
 | **AGENTS.md** | 神经通路 (Chr-2) | 工作流规范与决策逻辑。包含信号检测表和工具调用策略。 |
@@ -157,6 +166,8 @@ MiniClaw 的 `templates/` 目录包含完整的数字生命基因组。每个文
 | **HEARTBEAT.md** | 脉搏系统 | 后台自主行为指令。由 macOS launchd 定期唤醒 `heartbeat.sh` 读取并通过 `claude -p` 执行。 |
 | **BOOTSTRAP.md** | 胚胎发育 | 首次启动的初始化协议。目录结构创建和模板复制逻辑。 |
 | **HORIZONS.md** | 进化蓝图 | 长期发展路线图。记录待探索的技术和未来的能力扩展方向。 |
+| **SUBAGENT.md** | 细胞分化 | 子代理创建规范。任务拆解和专注执行的协议定义。 |
+| **jobs.json** | 生物钟 | 定时任务配置。Cron 格式的周期性任务调度表。 |
 
 > **💡 记忆原理**：每次对话后，MiniClaw 会将关键信息写入对应的染色体文件。下次启动时通过 `miniclaw_read` 加载全部 DNA，实现"全脑唤醒"。
 
@@ -178,6 +189,60 @@ npm run build
 # 3. 注册 (自动脚本)
 ./scripts/install.sh
 ```
+
+---
+
+## ⏰ 定时任务 (Scheduled Jobs)
+
+MiniClaw 内置了自动任务调度系统，无需配置外部 crontab。
+
+### 工作原理
+
+MiniClaw 有两套互补的调度机制：
+
+| 机制 | 触发方式 | 适用场景 |
+|:-----|:---------|:---------|
+| **kernel.ts** 内部调度 | 每分钟检查 `jobs.json` | 你在编辑器中工作时，任务以提醒的形式注入当前对话 |
+| **heartbeat.sh** 后台调度 | macOS launchd 每 30 分钟唤醒 | 你不在时，AI 仍可执行 `HEARTBEAT.md` 中的自主行为 |
+
+**jobs.json 定时任务流程**：
+1. **AutonomicSystem** 每分钟自动检查 `~/.miniclaw/jobs.json`
+2. 匹配当前时间的任务会注入到 AI 的**当前对话上下文**中
+3. Agent 在下次回复时看到并执行这些任务
+
+> 任务去重信息持久化在 `state.json` 中，进程重启也不会重复触发。
+
+### 添加定时任务
+
+直接编辑 `~/.miniclaw/jobs.json`，或在对话中请求：
+
+```text
+"帮我添加一个定时任务：每天早上9点提醒我检查邮件"
+→ Agent 会更新 jobs.json
+```
+
+### jobs.json 格式示例
+
+```json
+[
+    {
+        "id": "daily-email-check",
+        "name": "每日邮件检查",
+        "enabled": true,
+        "schedule": {
+            "kind": "cron",
+            "expr": "0 9 * * *",
+            "tz": "Asia/Shanghai"
+        },
+        "payload": {
+            "kind": "systemEvent",
+            "text": "检查邮件，看有没有重要事项"
+        }
+    }
+]
+```
+
+> **注意**：`jobs.json` 定时任务只在 MiniClaw MCP 进程运行时生效。后台自主行为（`HEARTBEAT.md`）由 launchd 独立调度，无需编辑器在线。
 
 ---
 
