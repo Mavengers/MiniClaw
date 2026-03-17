@@ -87,32 +87,11 @@ export function parseFrontmatter(content) {
     return result;
 }
 // ─── File I/O ────────────────────────────────────────────────────────────────
-export async function atomicWrite(filePath, data) {
-    const tmp = filePath + ".tmp";
-    await fs.writeFile(tmp, data, "utf-8");
-    await fs.rename(tmp, filePath);
+export async function atomicWrite(filePath, content) {
+    const tempPath = `${filePath}.${Math.random().toString(36).slice(2)}.tmp`;
+    await fs.writeFile(tempPath, content, "utf-8");
+    await fs.rename(tempPath, filePath);
 }
-export function hashString(s) {
-    return crypto.createHash("md5").update(s).digest("hex");
-}
-// ─── MCP Response Helpers ────────────────────────────────────────────────────
-/** Standard MCP text response (eliminates 49+ repetitions) */
-export const textResult = (text, isError = false) => ({
-    content: [{ type: "text", text }],
-    ...(isError && { isError: true })
-});
-/** Standard MCP error response */
-export const errorResult = (msg) => textResult(`❌ ${msg}`);
-// ─── Common Helpers ──────────────────────────────────────────────────────────
-/** Today's date as YYYY-MM-DD */
-export const today = () => new Date().toISOString().split('T')[0];
-/** Current timestamp in ISO format */
-export const nowIso = () => new Date().toISOString();
-/** Current time string HH:MM:SS */
-export const currentTime = () => new Date().toLocaleTimeString();
-/** Check if a path exists (avoids try/catch boilerplate) */
-export const fileExists = (p) => fs.access(p).then(() => true, () => false);
-/** Safe file read - returns default value on error */
 export const safeRead = async (p, defaultValue = "") => {
     try {
         return await fs.readFile(p, "utf-8");
@@ -121,7 +100,6 @@ export const safeRead = async (p, defaultValue = "") => {
         return defaultValue;
     }
 };
-/** Safe JSON read - returns default value on error */
 export const safeReadJson = async (p, defaultValue) => {
     try {
         return JSON.parse(await fs.readFile(p, "utf-8"));
@@ -130,31 +108,63 @@ export const safeReadJson = async (p, defaultValue) => {
         return defaultValue;
     }
 };
-/** Safe file write - ignores errors */
 export const safeWrite = async (p, data) => {
     try {
         await fs.writeFile(p, data, "utf-8");
     }
     catch { /* ignore */ }
 };
-/** Safe append - ignores errors */
 export const safeAppend = async (p, data) => {
     try {
         await fs.appendFile(p, data, "utf-8");
     }
     catch { /* ignore */ }
 };
-/** Calculate days since a timestamp */
-export const daysSince = (timestamp) => {
-    const then = new Date(timestamp).getTime();
-    return (Date.now() - then) / (1000 * 60 * 60 * 24);
+export const fileExists = (p) => fs.access(p).then(() => true, () => false);
+export function hashString(s) {
+    return crypto.createHash("md5").update(s).digest("hex");
+}
+// ─── Math & Logic ────────────────────────────────────────────────────────────
+export function calculateSimilarity(str1, str2) {
+    const s1 = str1.toLowerCase(), s2 = str2.toLowerCase();
+    if (s1 === s2)
+        return 1.0;
+    if (!s1 || !s2)
+        return 0.0;
+    const pairs1 = getPairs(s1), pairs2 = getPairs(s2);
+    let hit = 0, union = pairs1.length + pairs2.length;
+    for (const p1 of pairs1) {
+        const idx = pairs2.indexOf(p1);
+        if (idx !== -1) {
+            hit++;
+            pairs2.splice(idx, 1);
+        }
+    }
+    return (2.0 * hit) / union;
+}
+const getPairs = (s) => {
+    const p = [];
+    for (let i = 0; i < s.length - 1; i++)
+        p.push(s.substring(i, i + 2));
+    return p;
 };
-/** Calculate hours since a timestamp */
-export const hoursSince = (timestamp) => {
-    const then = new Date(timestamp).getTime();
-    return (Date.now() - then) / (1000 * 60 * 60);
-};
-/** Clamp number to range */
 export const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-/** Blend two values (linear interpolation) */
-export const blend = (current, target, rate = 0.3) => current + (target - current) * rate;
+export const blend = (curr, target, rate = 0.3) => curr + (target - curr) * rate;
+// ─── Time ────────────────────────────────────────────────────────────────────
+export const pick = (obj, keys) => {
+    const res = {};
+    for (const k of keys)
+        if (obj[k] !== undefined)
+            res[k] = obj[k];
+    return res;
+};
+export const today = () => new Date().toISOString().split('T')[0];
+export const nowIso = () => new Date().toISOString();
+export const daysSince = (t) => (Date.now() - new Date(t).getTime()) / 86400000;
+export const hoursSince = (t) => (Date.now() - new Date(t).getTime()) / 3600000;
+// ─── MCP Helpers ──────────────────────────────────────────────────────────────
+export const textResult = (text, isError = false) => ({
+    content: [{ type: "text", text }],
+    ...(isError && { isError: true })
+});
+export const errorResult = (msg) => textResult(`❌ ${msg}`, true);
