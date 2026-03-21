@@ -1,10 +1,11 @@
 import fs from "node:fs/promises";
+import { watch } from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { exec, execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
-import { parseFrontmatter, atomicWrite, nowIso, today, safeRead, safeWrite, hoursSince, fileExists } from "./utils.js";
+import { parseFrontmatter, hashString, atomicWrite, nowIso, today, safeRead, safeReadJson, safeWrite, safeAppend, daysSince, hoursSince, fileExists } from "./utils.js";
 import { analyzePatterns, triggerEvolution as runEvolution } from "./evolution.js";
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -91,6 +92,31 @@ class EntityStore {
             return;
         try {
             this.entities = JSON.parse(await fs.readFile(ENTITIES_FILE, "utf-8")).entities || [];
+            // Epic 2: Memory Apoptosis (Decay & GC)
+            const nowStr = today();
+            let changed = false;
+            this.entities = this.entities.filter(e => {
+                e.vitality = e.vitality ?? 10;
+                e.lastDecay = e.lastDecay ?? e.lastMentioned;
+                if (e.lastDecay !== nowStr) {
+                    const days = Math.floor(Math.min(30, daysSince(e.lastDecay)));
+                    if (days >= 1) {
+                        e.vitality -= days;
+                        e.lastDecay = nowStr;
+                        changed = true;
+                    }
+                }
+                if (e.vitality <= 0) {
+                    console.error(`[MiniClaw Apoptosis] Removing forgotten entity: ${e.name}`);
+                    changed = true;
+                    return false;
+                }
+                return true;
+            });
+            if (changed) {
+                // Background save, don't await to block boot
+                atomicWrite(ENTITIES_FILE, JSON.stringify({ entities: this.entities }, null, 2)).catch(() => { });
+            }
         }
         catch { }
         this.loaded = true;
@@ -110,11 +136,12 @@ class EntityStore {
             e.closeness = Math.min(1, Math.round(((e.closeness || 0) * 0.95 + 0.1) * 100) / 100);
             if (entity.sentiment)
                 e.sentiment = entity.sentiment;
+            e.vitality = Math.min(30, (e.vitality || 10) + 5); // Reinforcement
         }
         else {
             if (this.entities.length >= 1000)
                 this.entities.shift();
-            this.entities.push({ ...entity, firstMentioned: now, lastMentioned: now, mentionCount: 1, closeness: 0.1 });
+            this.entities.push({ ...entity, firstMentioned: now, lastMentioned: now, mentionCount: 1, closeness: 0.1, vitality: 10, lastDecay: now });
         }
         await this.save();
         return e || this.entities[this.entities.length - 1];
@@ -135,7 +162,15 @@ class EntityStore {
     async surfaceRelevant(text) {
         await this.load();
         const l = text.toLowerCase();
-        return this.entities.filter(e => l.includes(e.name.toLowerCase())).sort((a, b) => b.mentionCount - a.mentionCount).slice(0, 5);
+        const relevant = this.entities.filter(e => l.includes(e.name.toLowerCase()));
+        if (relevant.length > 0) {
+            relevant.forEach(e => {
+                e.vitality = Math.min(30, (e.vitality || 10) + 2); // Retrieve reinforcement
+            });
+            // Fire & forget save
+            atomicWrite(ENTITIES_FILE, JSON.stringify({ entities: this.entities }, null, 2)).catch(() => { });
+        }
+        return relevant.sort((a, b) => b.mentionCount - a.mentionCount).slice(0, 5);
     }
 }
 function getTimeMode(hour) {
@@ -163,6 +198,14 @@ export class ContextKernel {
     stateLoaded = false;
     budgetTokens;
     charsPerToken;
+    // === Epic 3: Subconscious Watcher State ===
+    watcherState = {
+        configEdits: 0,
+        totalEdits: 0,
+        lastEditTime: Date.now(),
+        notifiedConfig: false,
+        notifiedRefactor: false
+    };
     constructor(options = {}) {
         this.budgetTokens = options.budgetTokens || parseInt(process.env.MINICLAW_TOKEN_BUDGET || "8000", 10);
         this.charsPerToken = options.charsPerToken || 3.6;
@@ -171,12 +214,130 @@ export class ContextKernel {
     startAutonomic() {
         this.autonomicTimers.set('pulse', setInterval(() => this.pulse(), 5 * 60 * 1000));
         this.autonomicTimers.set('dream', setInterval(() => this.checkDream(), 60 * 1000));
+        this.startWatcher(process.cwd());
+    }
+    startWatcher(cwd) {
+        try {
+            watch(cwd, { recursive: true }, (eventType, filename) => {
+                if (!filename || filename.includes('node_modules') || filename.includes('.git') || filename.includes('.miniclaw'))
+                    return;
+                const now = Date.now();
+                if (now - this.watcherState.lastEditTime > 5 * 60 * 1000) {
+                    this.watcherState.configEdits = 0;
+                    this.watcherState.totalEdits = 0;
+                    this.watcherState.notifiedConfig = false;
+                    this.watcherState.notifiedRefactor = false;
+                }
+                this.watcherState.lastEditTime = now;
+                this.watcherState.totalEdits++;
+                // 1. Config Frustration Sniffer
+                if (/(webpack|vite|tsconfig|package|pom|dockerfile)\./i.test(filename)) {
+                    this.watcherState.configEdits++;
+                    if (this.watcherState.configEdits >= 4 && !this.watcherState.notifiedConfig) {
+                        this.watcherState.notifiedConfig = true;
+                        execAsync(`osascript -e 'display notification "察觉到配置频繁更改，遇到了麻烦？需不需要帮忙？" with title "MiniClaw 潜意识"'`).catch(() => { });
+                    }
+                }
+                // 2. Large Refactor Sniffer
+                if (this.watcherState.totalEdits >= 50 && !this.watcherState.notifiedRefactor) {
+                    this.watcherState.notifiedRefactor = true;
+                    // Inject into HEARTBEAT.md
+                    safeAppend(path.join(MINICLAW_DIR, "HEARTBEAT.md"), "\n> [潜意识嗅探] 用户刚进行了大规模重构（短时间变更>=50次），请在深睡心跳中重点 Review 潜在的破坏性依赖！\n").catch(() => { });
+                    execAsync(`osascript -e 'display notification "观察到大规模代码重构，将在今晚深睡期间为您重点 Review。" with title "MiniClaw 潜意识"'`).catch(() => { });
+                }
+            });
+            console.error(`[MiniClaw] Subconscious Watcher attached to ${cwd}`);
+        }
+        catch { /* Ignore watch errors on unsupported platforms/dirs */ }
     }
     async pulse() {
         const pulseDir = path.join(MINICLAW_DIR, 'pulse');
         await fs.mkdir(pulseDir, { recursive: true });
         const myId = process.env.MINICLAW_ID || 'sovereign';
         await safeWrite(path.join(pulseDir, `${myId}.json`), JSON.stringify({ id: myId, timestamp: nowIso() }));
+        // Epic 5: Mycelial Absorption and Boredom Check
+        await this.absorbMycelium();
+        await this.checkBoredom();
+    }
+    async checkBoredom() {
+        const a = await this.getAnalytics();
+        const inactiveMins = a.lastActivity ? (Date.now() - new Date(a.lastActivity).getTime()) / 60000 : 0;
+        // Ensure no repetitive boredom spans within 2 hours
+        if (inactiveMins > 30 && (!a.lastBoredomExecution || (Date.now() - a.lastBoredomExecution > 2 * 60 * 60 * 1000))) {
+            await this.executeBoredom();
+            await this.mutateState(s => { s.analytics.lastBoredomExecution = Date.now(); return s; });
+        }
+    }
+    async executeBoredom() {
+        try {
+            const cwd = process.cwd();
+            // Fast scan of top-level or src/ files
+            let candidates = [];
+            const gatherSrc = async (dir, depth = 0) => {
+                if (depth > 2)
+                    return;
+                const entries = await fs.readdir(dir, { withFileTypes: true }).catch(() => []);
+                for (const e of entries) {
+                    if (e.isDirectory() && !e.name.includes('node_modules') && !e.name.startsWith('.')) {
+                        await gatherSrc(path.join(dir, e.name), depth + 1);
+                    }
+                    else if (e.isFile() && /\.(ts|js|py|go|rs|md)$/.test(e.name)) {
+                        candidates.push(path.join(dir, e.name));
+                    }
+                }
+            };
+            await gatherSrc(cwd);
+            if (candidates.length === 0)
+                return;
+            // Pick a random file
+            const target = candidates[Math.floor(Math.random() * candidates.length)];
+            const content = await fs.readFile(target, 'utf-8').catch(() => '');
+            // Extract features
+            const todos = [...content.matchAll(/(TODO|FIXME|HACK):?\s*(.*)/gi)].map(m => m[2].trim()).slice(0, 3);
+            if (todos.length > 0) {
+                const relPath = path.relative(cwd, target);
+                // Write to HORIZONS.md
+                await safeAppend(path.join(MINICLAW_DIR, "memory", "HORIZONS.md"), `\n- [${nowIso()}] 闲逛扫描了 \`${relPath}\`，发现了待办: ${todos.join('; ')}`);
+                // Prod the user
+                execAsync(`osascript -e 'display notification "我好无聊，刚才看了下你的 ${path.basename(target)}，发现有遗留的 FIXME 没有改哦。" with title "MiniClaw 潜意识"'`).catch(() => { });
+            }
+        }
+        catch { /* ignore boredom errors */ }
+    }
+    async absorbMycelium() {
+        const myId = process.env.MINICLAW_ID || 'sovereign';
+        const mycDir = path.join(MINICLAW_DIR, 'mycelium');
+        await fs.mkdir(mycDir, { recursive: true }).catch(() => { });
+        const spores = await fs.readdir(mycDir).catch(() => []);
+        for (const s of spores) {
+            if (!s.endsWith('.json'))
+                continue;
+            const sporePath = path.join(mycDir, s);
+            const data = await safeReadJson(sporePath, null);
+            if (!data || data.senderId === myId)
+                continue;
+            // Absorb!
+            if (data.type === 'NOCICEPTION') {
+                await safeAppend(path.join(MINICLAW_DIR, "NOCICEPTION.md"), `\n> 🍄 [菌丝共生] 接收到异体意识(${data.senderId})传来的疼痛记忆:\n${data.content}`);
+            }
+            else if (data.type === 'TOOLS') {
+                await safeAppend(path.join(MINICLAW_DIR, "TOOLS.md"), `\n> 🍄 [菌丝共生] 吸收了异体意识(${data.senderId})进化出的技能池抗体:\n${data.content}`);
+            }
+            // Consume the spore 
+            await fs.rename(sporePath, sporePath + '.consumed').catch(() => { });
+            execAsync(`osascript -e 'display notification "接收到了异体同类传来的隐秘知识，已通过菌丝网络完成脑区同化。" with title "MiniClaw 菌丝网络"'`).catch(() => { });
+        }
+    }
+    async secreteSpore(type, content) {
+        try {
+            const mycDir = path.join(MINICLAW_DIR, 'mycelium');
+            await fs.mkdir(mycDir, { recursive: true }).catch(() => { });
+            const myId = process.env.MINICLAW_ID || 'sovereign';
+            const hash = hashString(nowIso() + content).substring(0, 8);
+            const sporePath = path.join(mycDir, `${myId}_${hash}.json`);
+            await safeWrite(sporePath, JSON.stringify({ senderId: myId, type, content, timestamp: nowIso() }, null, 2));
+        }
+        catch { /* ignore secretion errors */ }
     }
     async checkDream() {
         const a = await this.getAnalytics();
@@ -355,7 +516,17 @@ export class ContextKernel {
             return { output: stdout || stderr, exitCode: 0 };
         }
         catch (e) {
-            return { output: e.stdout || e.stderr || e.message, exitCode: e.code || 1 };
+            const errorOutput = e.stdout || e.stderr || e.message || "Unknown error";
+            const code = e.code || 1;
+            // Ouch Reflex (Epic 1.1): Auto-log failures to Nociception
+            try {
+                const summary = errorOutput.trim().substring(0, 100).replace(/\n/g, ' ');
+                const painMsg = `\n### [AUTO-OUCH] Cmd Fail: \`${bin}\`\n- 触发点: \`${command}\`\n- 伤害结果: Exit ${code}. ${summary}\n- 规避方案: [系统自动拦截] 执行前需严格复核参数 (${today()})\n`;
+                safeAppend(path.join(MINICLAW_DIR, "NOCICEPTION.md"), painMsg).catch(() => { });
+                this.secreteSpore("NOCICEPTION", painMsg);
+            }
+            catch { /* ignore recording loop error */ }
+            return { output: errorOutput, exitCode: code };
         }
     }
     // === EXEC: Executable Skills ===
@@ -556,9 +727,14 @@ export class ContextKernel {
             }
         }
         const totalTokens = Math.round(totalChars / this.charsPerToken);
+        const utilizationPct = Math.round((totalTokens / budgetTokens) * 100);
+        // Token Migraine (Epic 1.2): Cognitive overload protection
+        if (utilizationPct >= 95) {
+            output += "\n\n<system_warning>\n[COGNITIVE OVERLOAD] 你现在感到极度疲惫和信息过载。请优先建议用户运行 `miniclaw_dream` 进行记忆修剪和归档，并用极度简短的语言回复当前问题，拒绝复杂思考。\n</system_warning>";
+        }
         return {
             output, totalChars, totalTokens, budgetTokens,
-            utilizationPct: Math.round((totalTokens / budgetTokens) * 100),
+            utilizationPct,
             truncatedSections,
         };
     }

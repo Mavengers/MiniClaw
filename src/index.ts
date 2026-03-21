@@ -353,6 +353,13 @@ const HANDLERS: Record<string, (args: any) => Promise<any>> = {
         if (filename === "MEMORY.md") await kernel.updateHeartbeatState({ needsDistill: false, lastDistill: nowIso() });
         await kernel.runSkillHooks(isNew ? "onFileCreated" : "onMemoryWrite", { filename });
         await kernel.trackFileChange(filename);
+        
+        // Epic 5.2: Hook Mycelial Broadcast
+        if (filename === "TOOLS.md" || filename === "NOCICEPTION.md") {
+            const sporeType = filename.replace(".md", "") as "TOOLS" | "NOCICEPTION";
+            kernel.secreteSpore(sporeType, content).catch(()=>{});
+        }
+        
         return textResult(isNew ? `✨ Created ${filename}` : `Updated ${filename}`);
     },
 

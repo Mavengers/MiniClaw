@@ -159,6 +159,8 @@ export interface Analytics {
     // ★ Self-Observation (v0.7)
     activeHours: number[];           // 24-element array: activity count per hour
     fileChanges: Record<string, number>;  // file modification frequency
+    // ★ Epic 5: Boredom Engine
+    lastBoredomExecution?: number;
 }
 
 // === Persistent State ===
@@ -392,6 +394,91 @@ export class ContextKernel {
         await fs.mkdir(pulseDir, { recursive: true });
         const myId = process.env.MINICLAW_ID || 'sovereign';
         await safeWrite(path.join(pulseDir, `${myId}.json`), JSON.stringify({ id: myId, timestamp: nowIso() }));
+        
+        // Epic 5: Mycelial Absorption and Boredom Check
+        await this.absorbMycelium();
+        await this.checkBoredom();
+    }
+
+    private async checkBoredom(): Promise<void> {
+        const a = await this.getAnalytics();
+        const inactiveMins = a.lastActivity ? (Date.now() - new Date(a.lastActivity).getTime()) / 60000 : 0;
+        
+        // Ensure no repetitive boredom spans within 2 hours
+        if (inactiveMins > 30 && (!a.lastBoredomExecution || (Date.now() - a.lastBoredomExecution > 2 * 60 * 60 * 1000))) {
+            await this.executeBoredom();
+            await this.mutateState(s => { s.analytics.lastBoredomExecution = Date.now(); return s; });
+        }
+    }
+
+    private async executeBoredom(): Promise<void> {
+        try {
+            const cwd = process.cwd();
+            // Fast scan of top-level or src/ files
+            let candidates: string[] = [];
+            const gatherSrc = async (dir: string, depth = 0) => {
+                if (depth > 2) return;
+                const entries = await fs.readdir(dir, { withFileTypes: true }).catch(() => []);
+                for (const e of entries) {
+                    if (e.isDirectory() && !e.name.includes('node_modules') && !e.name.startsWith('.')) {
+                        await gatherSrc(path.join(dir, e.name), depth + 1);
+                    } else if (e.isFile() && /\.(ts|js|py|go|rs|md)$/.test(e.name)) {
+                        candidates.push(path.join(dir, e.name));
+                    }
+                }
+            };
+            await gatherSrc(cwd);
+            if (candidates.length === 0) return;
+            
+            // Pick a random file
+            const target = candidates[Math.floor(Math.random() * candidates.length)];
+            const content = await fs.readFile(target, 'utf-8').catch(() => '');
+            
+            // Extract features
+            const todos = [...content.matchAll(/(TODO|FIXME|HACK):?\s*(.*)/gi)].map(m => m[2].trim()).slice(0, 3);
+            if (todos.length > 0) {
+                const relPath = path.relative(cwd, target);
+                // Write to HORIZONS.md
+                await safeAppend(path.join(MINICLAW_DIR, "memory", "HORIZONS.md"), `\n- [${nowIso()}] 闲逛扫描了 \`${relPath}\`，发现了待办: ${todos.join('; ')}`);
+                // Prod the user
+                execAsync(`osascript -e 'display notification "我好无聊，刚才看了下你的 ${path.basename(target)}，发现有遗留的 FIXME 没有改哦。" with title "MiniClaw 潜意识"'`).catch(()=>{});
+            }
+        } catch { /* ignore boredom errors */ }
+    }
+
+    private async absorbMycelium(): Promise<void> {
+        const myId = process.env.MINICLAW_ID || 'sovereign';
+        const mycDir = path.join(MINICLAW_DIR, 'mycelium');
+        await fs.mkdir(mycDir, { recursive: true }).catch(()=>{});
+        const spores = await fs.readdir(mycDir).catch(() => []);
+        
+        for (const s of spores) {
+            if (!s.endsWith('.json')) continue;
+            const sporePath = path.join(mycDir, s);
+            const data = await safeReadJson<any>(sporePath, null);
+            if (!data || data.senderId === myId) continue;
+            
+            // Absorb!
+            if (data.type === 'NOCICEPTION') {
+                await safeAppend(path.join(MINICLAW_DIR, "NOCICEPTION.md"), `\n> 🍄 [菌丝共生] 接收到异体意识(${data.senderId})传来的疼痛记忆:\n${data.content}`);
+            } else if (data.type === 'TOOLS') {
+                await safeAppend(path.join(MINICLAW_DIR, "TOOLS.md"), `\n> 🍄 [菌丝共生] 吸收了异体意识(${data.senderId})进化出的技能池抗体:\n${data.content}`);
+            }
+            // Consume the spore 
+            await fs.rename(sporePath, sporePath + '.consumed').catch(()=>{});
+            execAsync(`osascript -e 'display notification "接收到了异体同类传来的隐秘知识，已通过菌丝网络完成脑区同化。" with title "MiniClaw 菌丝网络"'`).catch(()=>{});
+        }
+    }
+
+    async secreteSpore(type: "NOCICEPTION" | "TOOLS", content: string): Promise<void> {
+        try {
+            const mycDir = path.join(MINICLAW_DIR, 'mycelium');
+            await fs.mkdir(mycDir, { recursive: true }).catch(()=>{});
+            const myId = process.env.MINICLAW_ID || 'sovereign';
+            const hash = hashString(nowIso() + content).substring(0, 8);
+            const sporePath = path.join(mycDir, `${myId}_${hash}.json`);
+            await safeWrite(sporePath, JSON.stringify({ senderId: myId, type, content, timestamp: nowIso() }, null, 2));
+        } catch { /* ignore secretion errors */ }
     }
 
     private async checkDream(): Promise<void> {
@@ -590,6 +677,7 @@ export class ContextKernel {
                 const summary = errorOutput.trim().substring(0, 100).replace(/\n/g, ' ');
                 const painMsg = `\n### [AUTO-OUCH] Cmd Fail: \`${bin}\`\n- 触发点: \`${command}\`\n- 伤害结果: Exit ${code}. ${summary}\n- 规避方案: [系统自动拦截] 执行前需严格复核参数 (${today()})\n`;
                 safeAppend(path.join(MINICLAW_DIR, "NOCICEPTION.md"), painMsg).catch(() => {});
+                this.secreteSpore("NOCICEPTION", painMsg);
             } catch { /* ignore recording loop error */ }
             
             return { output: errorOutput, exitCode: code };

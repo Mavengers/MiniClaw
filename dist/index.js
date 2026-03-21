@@ -6,7 +6,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ContextKernel, MINICLAW_DIR } from "./kernel.js";
-import { textResult, errorResult, today, nowIso, fileExists, safeRead } from "./utils.js";
+import { textResult, errorResult, today, nowIso, fileExists, safeRead, safeReadJson, safeAppend, hashString } from "./utils.js";
 // Configuration
 const kernel = new ContextKernel();
 // Start autonomic nervous system (pulse + dream)
@@ -183,6 +183,24 @@ async function bootstrapMiniClaw() {
             }
         }
         await fs.cp(path.join(templatesDir, "skills"), path.join(MINICLAW_DIR, "skills"), { recursive: true, force: false }).catch(() => { });
+        // Epic 4: Auto-migrate missing instincts in RIBOSOME.json
+        try {
+            const tplRiboRaw = await fs.readFile(path.join(templatesDir, "RIBOSOME.json"), "utf8");
+            const tplRibo = JSON.parse(tplRiboRaw);
+            const usrRibo = await safeReadJson(path.join(MINICLAW_DIR, "RIBOSOME.json"), {});
+            if (usrRibo.instincts && tplRibo.instincts) {
+                let changed = false;
+                for (const [k, v] of Object.entries(tplRibo.instincts)) {
+                    if (!usrRibo.instincts[k]) {
+                        usrRibo.instincts[k] = v;
+                        changed = true;
+                    }
+                }
+                if (changed)
+                    await fs.writeFile(path.join(MINICLAW_DIR, "RIBOSOME.json"), JSON.stringify(usrRibo, null, 2));
+            }
+        }
+        catch { /* Suppress migration error */ }
     }
 }
 /**
@@ -227,6 +245,41 @@ async function getContextContent(mode = "full") {
 // --- Tool Router ---
 const HANDLERS = {
     "miniclaw_read": async () => textResult(await getContextContent("full")),
+    // === Epic 4.2: Epigenetic Mutator ===
+    "miniclaw_mutate": async (args) => {
+        const { target, content } = args;
+        if (target !== "SOUL.md" && target !== "IDENTITY.md") {
+            throw new Error("Mutation rejected. Only SOUL.md and IDENTITY.md can be rewritten.");
+        }
+        if (!content || content.length < 50)
+            throw new Error("Mutation rejected. Content too short or missing.");
+        const targetPath = path.join(MINICLAW_DIR, target);
+        await fs.copyFile(targetPath, `${targetPath}.bak`).catch(() => { });
+        await fs.writeFile(targetPath, content, "utf-8");
+        await kernel.runSkillHooks("onMemoryWrite", { filename: target });
+        safeAppend(path.join(MINICLAW_DIR, "HEARTBEAT.md"), `\n> 🧬 [基因突变] 宿主主动触发了核心染色体重构 (${target})。性格或身份设定已永久覆写！\n`).catch(() => { });
+        return textResult(`Mutated ${target} successfully. Reboot your identity logic immediately.`);
+    },
+    // === Epic 4.3: The Spore Reproduction Protocol ===
+    "miniclaw_reproduce": async () => {
+        const sporesDir = path.join(MINICLAW_DIR, "spores");
+        await fs.mkdir(sporesDir, { recursive: true });
+        const hash = hashString(nowIso()).substring(0, 8);
+        const sporePath = path.join(sporesDir, `miniclaw_${hash}.spore`);
+        // Use native tar to bundle non-volatile genetic materials
+        const cd = `cd "${MINICLAW_DIR}"`;
+        const tarCmd = `tar -czvf "${sporePath}" SOUL.md IDENTITY.md TOOLS.md AGENTS.md USER.md entities.json skills/`;
+        try {
+            const { promisify } = await import("node:util");
+            const { exec } = await import("node:child_process");
+            const execAsync = promisify(exec);
+            await execAsync(`${cd} && ${tarCmd}`);
+            return textResult(`🧬 Reproduction complete! Spore created at:\n${sporePath}\n\nGenetic material archived successfully.`);
+        }
+        catch (e) {
+            return errorResult(`Reproduction failed: ${e.message || String(e)}`);
+        }
+    },
     "miniclaw_update": async (args) => {
         const { action = "write", filename, content } = args;
         const p = filename ? path.join(MINICLAW_DIR, filename) : "";
@@ -262,6 +315,11 @@ const HANDLERS = {
             await kernel.updateHeartbeatState({ needsDistill: false, lastDistill: nowIso() });
         await kernel.runSkillHooks(isNew ? "onFileCreated" : "onMemoryWrite", { filename });
         await kernel.trackFileChange(filename);
+        // Epic 5.2: Hook Mycelial Broadcast
+        if (filename === "TOOLS.md" || filename === "NOCICEPTION.md") {
+            const sporeType = filename.replace(".md", "");
+            kernel.secreteSpore(sporeType, content).catch(() => { });
+        }
         return textResult(isNew ? `✨ Created ${filename}` : `Updated ${filename}`);
     },
     "miniclaw_introspect": async (args) => {
