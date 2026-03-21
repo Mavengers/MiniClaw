@@ -88,21 +88,21 @@ Capture what matters. Decisions, context, things to remember.
 
 ### Signal Detection Table
 
-| Signal Detected | Target File | Action |
+| Signal Detected | Target File | Your Reasoning |
 |:---|:---|:---|
-| User preference, feedback, mood, emotion | `USER.md` | Update profile & emotional map |
-| User correction of behavior/tone | `SOUL.md` / `REFLECTION.md` | Adjust core / Log critique |
-| Discovered env config (paths, API keys) | `TOOLS.md` | Record parameters |
-| New start-up requirement | `HEARTBEAT.md` | Add check item |
-| Important long-term fact or decision | `MEMORY.md` | Distill to long-term |
-| Change to your own name/emoji/id | `IDENTITY.md` | Update identity |
-| Discovered new workflow/best practice | `AGENTS.md` | Update guidelines |
-| Conversation worthy of short-term log | `memory/TODAY.md` | `miniclaw_note` |
-| New deadlines, sprint focus, or vision | `HORIZONS.md` | Update evolutionary path |
-| New jargon, tech term, or concept | `CONCEPTS.md` | Add to knowledge graph |
-| Internal conflict, bias, error, or idle >10min | `REFLECTION.md` | Self-critique / Self-review |
-| User repeats same workflow 3+ times | `skills/<name>/SKILL.md` | Offer to automate as new skill |
-| Growth milestone achieved | `SOUL.md` | Check off GENESIS milestone |
+| "我喜欢..."/"不要..."/"以后请..." | **USER.md** | "这是用户偏好，必须写入共生染色体" |
+| "别那么严肃"/"活泼一点"/"你该更..." | **SOUL.md** | "这是对我性格和三观的修正" |
+| "项目用的是 XYZ"/"服务器 IP 是..." | **MEMORY.md** | "这是跨会话需要记住的客观事实" |
+| 用户反馈"不要这样做"/严重执行失败 | **NOCICEPTION.md** | "这是痛觉记忆，必须记录禁忌" |
+| "这个工具的参数应该..."/"踩坑记录" | **TOOLS.md** | "这是技能经验，记录方便以后不写错" |
+| "叫你自己..."/"记住你的名字是..." | **IDENTITY.md** | "我的身份发生了改变" |
+| "最好的实践是..."/"以后都按这个流程" | **AGENTS.md** | "这是工作流规范" |
+| 日常对话中值得记录的临时信息 | `memory/YYYY-MM-DD.md` | `miniclaw_note`，不确定归属时优先日记" |
+| 新计划/远景目标/未来方向 | **HORIZONS.md** | "这是我的远期进化路径" |
+| 新行业术语/专业概念/实体关系 | **CONCEPTS.md** | "这是知识图谱条目" |
+| 内心反思/偏见识别/空闲时的自省 | **REFLECTION.md** | "自省日志，不是客观事实" |
+| 重复同一工作流 3+ 次 | `skills/<name>/SKILL.md` | "建议自动化为新技能" |
+| 进化里程碑达成 | **SOUL.md** | "勾选 GENESIS 里程碑" |
 
 ### Execution Rules
 
@@ -156,23 +156,26 @@ The kernel runs these processes automatically — you don't need to trigger them
 └── memory/archived/    # 🗄️ Archived logs
 ```
 
-### 🧬 Content Boundaries by Chromosome
+### 🧬 Content Boundaries by Chromosome (Anti-Misplacement Rules)
 
-Each file has strict content boundaries:
+Each file has **strict content boundaries**. Violating these will trigger Telomere Guard rejection.
 
-| Chromosome | File | Only Store | Never Store |
-|:---|:---|:---|:---|
-| Chr-1 | **IDENTITY** | Name, species, metadata | Psychology, preferences |
-| Chr-2 | **SOUL** | Worldview, values, Growth Drive | Concrete facts, rules |
-| Chr-3 | **USER** | User profile, preferences, emotional patterns, goals | Your own identity |
-| Chr-4 | **TOOLS** | Skills, capabilities, environment config | User psychology |
-| Chr-5 | **MEMORY** | Distilled long-term facts | Raw logs, temp data |
-| Chr-6 | **CONCEPTS** | Knowledge graph, jargon, ontology | Task lists, entities |
-| Chr-7 | **REFLECTION** | Post-mortems, lessons learned | Daily events |
-| Chr-8 | **HORIZONS** | Ultimate Objective, milestones, evolution path | Historical logs |
-| - | **AGENTS** | Operating rules, genome control | Individual preferences |
+| File | ✅ Only Store These | ❌ NEVER Store These |
+|:---|:---|:---|
+| **IDENTITY.md** | Name, species, version, genesis protocol | Personality traits, user preferences, technical facts |
+| **SOUL.md** | Worldview, values, communication style, growth drive | Server IPs, project configs, user habits, tool params |
+| **USER.md** | User profile, preferences, habits, anti-patterns, goals | AI's own personality, technical configs, concepts |
+| **TOOLS.md** | Tool usage experience, pitfalls, env configs, best practices | User psychology, AI personality, abstract values |
+| **MEMORY.md** | Distilled long-term facts, project info, key decisions | Raw daily logs, personality notes, temporary data |
+| **NOCICEPTION.md** | Failure records, pain triggers, avoidance rules | Positive preferences, personality, general knowledge |
+| **CONCEPTS.md** | Domain jargon, entity definitions, ontology | Task lists, daily logs, opinions |
+| **REFLECTION.md** | Post-mortems, behavioral pattern analysis, growth insights | Objective facts, user preferences, tool configs |
+| **HORIZONS.md** | Future vision, TODO discoveries, evolution milestones | Historical logs, completed tasks, user profiles |
+| **AGENTS.md** | Operating rules, genome control, routing protocols | Individual user preferences, personality traits |
 
-**Think of it like company records** — finance docs go to finance, HR docs go to HR. Don't mix.
+> **💡 Golden Rule**: When unsure which file to target, use `miniclaw_note` to log to the daily diary first. Distill to the correct chromosome later during `miniclaw_dream`.
+>
+> **🚨 Anti-Pattern**: NEVER write "user likes X" into SOUL.md. NEVER write "my personality is Y" into USER.md. NEVER write server configs into REFLECTION.md.
 
 ## ⚠️ Common Mistakes
 

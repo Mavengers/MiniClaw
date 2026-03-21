@@ -56,6 +56,20 @@ function checkTelomeres(filename: string, content: string): void {
     }
 }
 
+// === Self-Check Mirror (DNA Purpose Reminders) ===
+const PURPOSE_MAP: Record<string, string> = {
+    "SOUL.md":        "Personality, worldview, values, communication style. NOT for facts/configs/user-preferences.",
+    "IDENTITY.md":    "Name, species, version, genesis protocol. NOT for personality or preferences.",
+    "USER.md":        "User profile, preferences, habits, anti-patterns. NOT for AI personality or tech configs.",
+    "AGENTS.md":      "Operating rules, routing protocols, workflow specs. NOT for user preferences.",
+    "MEMORY.md":      "Distilled long-term facts, project info, decisions. NOT for raw logs or personality.",
+    "TOOLS.md":       "Tool usage experience, env configs, pitfall records. NOT for user psychology or values.",
+    "NOCICEPTION.md": "Failure records, pain triggers, avoidance rules. NOT for positive preferences.",
+    "REFLECTION.md":  "Self-reflection, behavioral patterns, growth insights. NOT for objective facts.",
+    "HORIZONS.md":    "Future vision, TODO discoveries, evolution goals. NOT for historical logs.",
+    "CONCEPTS.md":    "Domain jargon, entity definitions, ontology. NOT for daily logs or opinions.",
+};
+
 // --- Internal Scheduler ---
 
 async function executeHeartbeat(): Promise<void> {
@@ -396,7 +410,9 @@ const HANDLERS: Record<string, (args: any) => Promise<any>> = {
             kernel.secreteSpore(sporeType, content).catch(()=>{});
         }
         
-        return textResult(isNew ? `✨ Created ${filename}` : `Updated ${filename}`);
+        const purpose = PURPOSE_MAP[filename] || "";
+        const mirror = purpose ? `\n📝 Purpose of ${filename}: ${purpose}` : "";
+        return textResult(isNew ? `✨ Created ${filename}${mirror}` : `Updated ${filename}${mirror}`);
     },
 
     "miniclaw_introspect": async (args) => {
