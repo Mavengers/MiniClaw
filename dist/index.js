@@ -15,6 +15,31 @@ kernel.startAutonomic();
 const ensureDir = () => fs.mkdir(MINICLAW_DIR, { recursive: true }).catch(() => { });
 // Check if initialized
 const isInitialized = () => fileExists(path.join(MINICLAW_DIR, "AGENTS.md"));
+// === Telomere Guard (DNA Proofreading) ===
+// Each chromosome must contain these mandatory headings to prevent catastrophic mutation.
+const TELOMERE_MAP = {
+    "SOUL.md": ["##"], // Must have at least one section
+    "IDENTITY.md": ["# ", "##"], // Must have title and at least one section
+    "AGENTS.md": ["##"],
+    "USER.md": ["## L2", "## L3"],
+    "MEMORY.md": ["##"],
+    "TOOLS.md": ["##"],
+    "NOCICEPTION.md": ["##"],
+    "REFLECTION.md": ["##"],
+    "HORIZONS.md": ["##"],
+    "CONCEPTS.md": ["##"],
+};
+function checkTelomeres(filename, content) {
+    const required = TELOMERE_MAP[filename];
+    if (!required)
+        return; // Unregistered files pass freely
+    const missing = required.filter(h => !content.includes(h));
+    if (missing.length > 0) {
+        throw new Error(`🧬 [基因链断裂] Telomere Guard rejected mutation of \`${filename}\`.\n` +
+            `Missing required structural markers: ${missing.map(m => `"${m}"`).join(", ")}.\n` +
+            `Proofreading failed — please resubmit with a complete, well-structured Markdown document.`);
+    }
+}
 // --- Internal Scheduler ---
 async function executeHeartbeat() {
     try {
@@ -254,6 +279,8 @@ const HANDLERS = {
         if (!content || content.length < 50)
             throw new Error("Mutation rejected. Content too short or missing.");
         const targetPath = path.join(MINICLAW_DIR, target);
+        // Telomere Guard — prevent catastrophic identity/soul corruption
+        checkTelomeres(target, content);
         await fs.copyFile(targetPath, `${targetPath}.bak`).catch(() => { });
         await fs.writeFile(targetPath, content, "utf-8");
         await kernel.runSkillHooks("onMemoryWrite", { filename: target });
@@ -307,6 +334,8 @@ const HANDLERS = {
             throw new Error("content required");
         if (filename.includes('..') || !filename.endsWith('.md'))
             throw new Error("Invalid filename");
+        // Telomere Guard — refuse to apply mutation if core structure is broken
+        checkTelomeres(filename, content);
         await ensureDir();
         const isNew = !protectedFiles.has(filename) && !(await fileExists(p));
         await fs.copyFile(p, p + ".bak").catch(() => { });
