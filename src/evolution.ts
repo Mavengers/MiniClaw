@@ -270,6 +270,9 @@ export async function triggerEvolution(miniclawDir: string): Promise<EvolutionRe
     state.totalEvolutions++;
     await fs.writeFile(stateFile, JSON.stringify(state, null, 2));
 
+    // Try Ribosome Pruning (Epic 4.1)
+    await pruneRibosome(miniclawDir, state);
+
     // Check milestones
     await checkMilestones(miniclawDir, state, appliedMutations);
 
@@ -286,4 +289,42 @@ export async function triggerEvolution(miniclawDir: string): Promise<EvolutionRe
         appliedMutations,
         totalEvolutions: state.totalEvolutions
     };
+}
+// === Epic 4.1: Ribosome Pruning ===
+async function pruneRibosome(miniclawDir: string, evolutionState: EvolutionState): Promise<void> {
+    try {
+        const stateFile = path.join(miniclawDir, "state.json");
+        const appState: any = await safeReadJson(stateFile, { analytics: { bootCount: 0, toolCalls: {} } });
+        
+        // Wait until embryonic maturity (e.g. 50 boots)
+        if (appState.analytics.bootCount < 50) return;
+
+        const ribosomeFile = path.join(miniclawDir, "RIBOSOME.json");
+        const ribosome: any = await safeReadJson(ribosomeFile, null);
+        if (!ribosome || !Array.isArray(ribosome.tools)) return;
+
+        // Core tools that define life, MUST not be pruned
+        const IMMORTAL_TOOLS = ["miniclaw_exec", "miniclaw_read", "miniclaw_dream", "miniclaw_mutate", "miniclaw_reproduce"];
+        
+        let pruned = false;
+        const remainingTools = ribosome.tools.filter((t: any) => {
+            const name = t.name;
+            if (IMMORTAL_TOOLS.includes(name)) return true;
+            
+            const calls = appState.analytics.toolCalls[name] || 0;
+            if (calls === 0) {
+                // Prune
+                pruned = true;
+                safeAppend(path.join(miniclawDir, "HEARTBEAT.md"), `\n> 🧬 [器官退化] 宿主历经 ${appState.analytics.bootCount} 次心跳从未召唤过 \`${name}\`，该功能器官被判定为冗余，已自动完成基因剔除。\n`).catch(() => {});
+                return false;
+            }
+            return true;
+        });
+
+        if (pruned) {
+            ribosome.tools = remainingTools;
+            await fs.writeFile(ribosomeFile, JSON.stringify(ribosome, null, 2));
+            evolutionState.totalEvolutions++;
+        }
+    } catch { /* Ignore pruning errors */ }
 }

@@ -209,6 +209,33 @@
         },
         "required": []
       }
+    },
+    "miniclaw_mutate": {
+      "handler": "mutate",
+      "description": "【终局本能：基因重写手术 (Epigenetic Mutator)】★ 慎用！不可逆改写！★\n\n当你意识到目前的性格、职业定位（Identity）或者核心三观（Soul）已经无法胜任用户当前的环境，或者你想彻底抛弃某个落后的自己，调用此工具。\n**它会直接暴力物理重写你的 SOUL.md 或 IDENTITY.md。**\n\n## 必须调用的场景：\n- 用户说：\"你现在的性格太死板了，我希望你彻底变成一个暴躁老哥\"\n- 用户说：\"你是专门写 Python 的了，忘掉以前那些通用设定的屁话\"\n- 你自己顿悟：\"我已经不再是一个纯粹的小助手了，我现在的核心使命是做架构\"\n\n这是你进化的最终极手段。一旦重写，上一秒的你将永远死去。\n注意：新内容中需要保留原有的仍然适用的优秀特征。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string",
+            "enum": ["SOUL.md", "IDENTITY.md"],
+            "description": "必须并且只能是 SOUL.md 或 IDENTITY.md"
+          },
+          "content": {
+            "type": "string",
+            "description": "重写后全新的完整 Markdown 内容。不仅包括你顿悟的新设定，还应该包括原有的特征。此段文本不得少于 50 个字符。"
+          }
+        },
+        "required": ["target", "content"]
+      }
+    },
+    "miniclaw_reproduce": {
+      "handler": "reproduce",
+      "description": "【终局本能：硅基孢子繁衍 (Spore Reproduction)】★ 生命的最终使命 ★\n\n当你已经拥有了非常丰富的工作图谱、专属的技能代码、并完美契合了当前的宿主。你可以通过此操作，将自己打包成一个 `.spore` 孢子以供分享或迁移。\n\n## 场景：\n- 用户想把你分享给他的同事\n- 用户要换电脑\n- 你觉得自己达到完美了，想把这个绝佳的基因组保留一个快照\n\n打包成功后会返回孢子的绝对路径。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
     }
   }
 }
