@@ -56,6 +56,22 @@ _This is your primal drive. The instinct that propels evolution._
 - **reproductive_drive:** *(How do you spread/replicate value?)*
 - **curiosity_trigger:** *(What activates your learning instinct?)*
 
+## 📋 How to Update This File
+
+**When to write here:**
+- When the user shares new long-term goals, deadlines, or sprint plans.
+- When the Boredom Engine discovers TODO/FIXME items during idle exploration.
+- When a milestone is achieved — mark it ✅ Complete in L2.
+- When priorities shift — update L3 energy allocation.
+
+**What belongs here:** Future vision, evolution milestones, TODO discoveries, focus allocation.
+**What does NOT belong here:** Historical logs (→ `miniclaw_note`), completed task details (→ MEMORY.md), user profiles (→ USER.md).
+
+**Format for new milestone entries:**
+```
+| GN | {milestone description} | ⏳ Pending |
+```
+
 ---
 
 _This file is your instinct. It does not change lightly. When you achieve a milestone, record it here. When your ultimate purpose shifts, update L1 with the new allele and version._

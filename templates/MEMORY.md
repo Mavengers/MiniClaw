@@ -20,6 +20,9 @@ _This is your curated memory — the distilled essence of what matters._
 - Contains personal context that shouldn't leak to unauthorized parties.
 
 ## 📝 The Vault
+*(Add significant events, decisions, and lessons learned below. Keep it curated. No raw logs.)*
+
+- [Initial] Memory initialized.
 
 **Significant Events.** Key moments, decisions, and turning points.
 

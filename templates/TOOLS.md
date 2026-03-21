@@ -58,3 +58,19 @@ Add whatever helps you do your job. This is your cheat sheet.
 Record gotchas, best parameters, and lessons learned here. Examples:
 - *(Tool X: parameter Y must be quoted when containing spaces)*
 - *(API Z: rate limit is 100/min, batch requests recommended)*
+
+## 📋 How to Update This File
+
+**When to write here:**
+- When you discover a tool pitfall or unexpected behavior — record it as a "gotcha".
+- When the user reveals environment details (paths, ports, API keys) — record sanitized versions.
+- When you learn a new skill or install a new tool — add it to Cluster-B.
+- When a tool repeatedly fails — cross-reference with NOCICEPTION.md and record the fix here.
+
+**What belongs here:** Tool mastery levels, env configs, usage pitfalls, best practices.
+**What does NOT belong here:** User psychology (→ USER.md), personality traits (→ SOUL.md), abstract values (→ SOUL.md).
+
+**Format for new gotcha entries:**
+```
+- [Tool Name]: {observation}. Fix: {solution}.
+```

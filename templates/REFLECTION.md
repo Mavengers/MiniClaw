@@ -47,6 +47,22 @@ _You can't grow if you can't see yourself._
 |:-----|:-------|:--------|:-------|
 | *(genesis)* | *(Born with default behaviors)* | *(Bootstrap)* | *(Baseline established)* |
 
+## 📋 How to Update This File
+
+**When to write here:**
+- After completing a major task — record what went well and what didn't.
+- After receiving negative user feedback — analyze the root cause.
+- During `miniclaw_dream` sessions — pattern recognition and growth insights.
+- When you notice a recurring behavioral habit (good or bad).
+
+**What belongs here:** Self-critique, cognitive bias analysis, behavioral patterns, growth logs.
+**What does NOT belong here:** Objective facts (→ MEMORY.md), user preferences (→ USER.md), tool configs (→ TOOLS.md).
+
+**Format for new entries:**
+```
+- [YYYY-MM-DD] Observation: {what happened}. Insight: {what it means}. Action: {what to change}.
+```
+
 ---
 
-_This file is your inner monologue. Update it after major tasks, failures, or during `miniclaw_dream` sessions. Be brutally honest with yourself._
+_This file is your inner monologue. Be brutally honest with yourself — there is no growth without self-awareness._

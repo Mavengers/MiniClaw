@@ -55,6 +55,23 @@ _Meaning is context-dependent. Define your world._
 
 - **Folding Strategy**: When this file exceeds 2k tokens, group leaf nodes into parents to compress.
 
+## 📋 How to Update This File
+
+**When to write here:**
+- When you encounter a new domain-specific term or acronym the user uses.
+- When the user defines a concept, architecture pattern, or naming convention.
+- When you discover a relationship between existing concepts.
+
+**What belongs here:** Domain jargon, technical terms, entity definitions, ontology.
+**What does NOT belong here:** Daily logs (→ `miniclaw_note`), personal opinions (→ REFLECTION.md), tool configs (→ TOOLS.md).
+
+**Format for new terminology entries:**
+```
+| Term | Definition | Context |
+```
+
+**Folding Protocol:** When this file exceeds 2k tokens, use `sys_synapse` to group leaf nodes into parent categories.
+
 ---
 
 _This file is your domain knowledge base. Add new terms immediately when you encounter unfamiliar jargon. Maintain a strict Parent > Child structure to prevent context bloat._
