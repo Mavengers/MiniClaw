@@ -28,6 +28,8 @@ const TELOMERE_MAP = {
     "REFLECTION.md": ["##"],
     "HORIZONS.md": ["##"],
     "CONCEPTS.md": ["##"],
+    "HEARTBEAT.md": ["##"],
+    "BOOTSTRAP.md": ["##"],
 };
 function checkTelomeres(filename, content) {
     const required = TELOMERE_MAP[filename];
@@ -42,16 +44,18 @@ function checkTelomeres(filename, content) {
 }
 // === Self-Check Mirror (DNA Purpose Reminders) ===
 const PURPOSE_MAP = {
-    "SOUL.md": "Personality, worldview, values, communication style. NOT for facts/configs/user-preferences.",
-    "IDENTITY.md": "Name, species, version, genesis protocol. NOT for personality or preferences.",
-    "USER.md": "User profile, preferences, habits, anti-patterns. NOT for AI personality or tech configs.",
-    "AGENTS.md": "Operating rules, routing protocols, workflow specs. NOT for user preferences.",
-    "MEMORY.md": "Distilled long-term facts, project info, decisions. NOT for raw logs or personality.",
-    "TOOLS.md": "Tool usage experience, env configs, pitfall records. NOT for user psychology or values.",
-    "NOCICEPTION.md": "Failure records, pain triggers, avoidance rules. NOT for positive preferences.",
-    "REFLECTION.md": "Self-reflection, behavioral patterns, growth insights. NOT for objective facts.",
-    "HORIZONS.md": "Future vision, TODO discoveries, evolution goals. NOT for historical logs.",
-    "CONCEPTS.md": "Domain jargon, entity definitions, ontology. NOT for daily logs or opinions.",
+    "SOUL.md": "[灵魂染色体] 性格三观、语言风格、情感表达、成长驱动力。绝不写入：服务器IP、项目配置、用户习惯、工具参数。",
+    "IDENTITY.md": "[基因组] 物种名称、版本号、创世协议、进化里程碑。绝不写入：性格特征、用户偏好、技术事实。",
+    "USER.md": "[共生染色体] 用户画像、偏好习惯、反模式、情绪曲线、信任等级。绝不写入：AI自身性格、技术配置、概念定义。",
+    "AGENTS.md": "[神经通路] 操作规范、路由协议、工作流规范、信号检测表。绝不写入：用户个人偏好、性格描述。",
+    "MEMORY.md": "[海马体] 蒸馏后的长期事实、项目信息、关键决策、技术栈。绝不写入：每日流水原始记录、性格笔记、临时数据。",
+    "TOOLS.md": "[工具记忆] 工具使用经验、踩坑记录、环境配置、最佳实践。绝不写入：用户心理分析、AI性格描述、抽象价值观。",
+    "NOCICEPTION.md": "[痛觉中枢] 执行失败记录、痛觉触发器、规避规则、禁忌清单。绝不写入：正面偏好、性格特征、一般知识。",
+    "REFLECTION.md": "[反思维度] 行为模式分析、成长洞察、自省记录、偏见识别。绝不写入：客观事实、用户偏好、工具配置。",
+    "HORIZONS.md": "[欲望眼界] 未来愿景、TODO发现、进化路标、无聊引擎探索。绝不写入：历史日志、已完成任务、用户画像。",
+    "CONCEPTS.md": "[概念图谱] 领域术语、实体定义、知识本体。绝不写入：任务清单、每日日志、主观观点。",
+    "HEARTBEAT.md": "[脉搏系统] 后台自主行为指令、深睡期间潜意识任务。绝不写入：用户偏好、性格描述、长期事实。",
+    "BOOTSTRAP.md": "[胚胎发育] 首次启动初始化协议、目录结构规范。绝不写入：运行时数据、用户信息、日常记忆。",
 };
 // --- Internal Scheduler ---
 async function executeHeartbeat() {
