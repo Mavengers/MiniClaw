@@ -272,6 +272,7 @@ export class ContextKernel {
         const providers = [
             () => add("core", "You are MiniClaw 0.7. Narrative brief, safety first.", 10),
             () => add("IDENTITY.md", tmpl.identity ? this.formatFile("IDENTITY.md", tmpl.identity) : undefined, 10),
+            () => add("NOCICEPTION.md", tmpl.nociception ? `## 🚨 Avoidance Patterns (Taboos)\n${tmpl.nociception}` : undefined, 9),
             () => add("EPIGENETICS", epigenetics ? `## Project Overrides\n${epigenetics}` : undefined, 9),
             () => {
                 let ace = `## ACE: ${tm.emoji} ${tm.label} (${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')})\n`;
@@ -631,7 +632,7 @@ export class ContextKernel {
         }
     }
     async loadTemplates() {
-        const names = ["AGENTS.md", "SOUL.md", "IDENTITY.md", "USER.md", "HORIZONS.md", "CONCEPTS.md", "TOOLS.md", "MEMORY.md", "HEARTBEAT.md", "BOOTSTRAP.md", "REFLECTION.md"];
+        const names = ["AGENTS.md", "SOUL.md", "IDENTITY.md", "USER.md", "HORIZONS.md", "CONCEPTS.md", "TOOLS.md", "MEMORY.md", "HEARTBEAT.md", "BOOTSTRAP.md", "REFLECTION.md", "NOCICEPTION.md"];
         const results = await Promise.all(names.map(name => safeRead(path.join(MINICLAW_DIR, name))));
         const dynamicFiles = [];
         try {
@@ -648,7 +649,7 @@ export class ContextKernel {
         return {
             agents: results[0], soul: results[1], identity: results[2],
             user: results[3], horizons: results[4], concepts: results[5], tools: results[6], memory: results[7],
-            heartbeat: results[8], bootstrap: results[9], reflection: results[10],
+            heartbeat: results[8], bootstrap: results[9], reflection: results[10], nociception: results[11],
             dynamicFiles
         };
     }

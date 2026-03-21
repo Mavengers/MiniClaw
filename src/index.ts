@@ -371,6 +371,13 @@ const HANDLERS: Record<string, (args: any) => Promise<any>> = {
             `3. Identify growth moments, mistakes, and lessons`,
             `4. Write breakthrough insights to **REFLECTION.md** via miniclaw_update`,
             `5. If you discovered new user preferences, update **USER.md**`,
+            `6. 🚨 **Nociception Check**: If any actions caused failures, user frustration, or near-misses, record them in **NOCICEPTION.md** using the format:`,
+            `   \`\`\``,
+            `   ### [Pattern Name]`,
+            `   - **触发点**: what triggered the mistake`,
+            `   - **伤害结果**: what harm occurred`,
+            `   - **规避方案**: how to avoid it next time`,
+            `   \`\`\``,
             ``,
             `> Begin your dream sequence now. What does your recent experience reveal?`,
         ].join('\n'));
