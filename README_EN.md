@@ -10,20 +10,23 @@
   </p>
 </div>
 
-> **🔥 MiniClaw is a minimalist implementation of the popular [OpenClaw](https://github.com/openclaw/openclaw) project.**
-> If you want to experience the core "Agentic" concepts (like Micro-Kernel, ACE Engine) at the **lowest cost**, MiniClaw is the best alternative.
+> **🔥 MiniClaw is an independent open-source project inspired by [OpenClaw](https://github.com/openclaw/openclaw).**
+> It focuses exclusively on the **memory and evolution of AI Copilots inside IDEs and Desktop Environments**.
 
 ---
 
-**MiniClaw is a general-purpose "Micro-Kernel Agent" designed for Claude CoWork, Qoderwork, WorkBuddy, and any MCP-compatible client.**
+**MiniClaw is a general-purpose "Micro-Kernel Agent" designed for Claude Desktop, Qoderwork, Cursor, Windsurf, and any MCP-compatible clients.**
 
-Unlike heavy chatbots that act as separate applications, MiniClaw is a **parasitic nervous system** that attaches to your existing AI workflow. It gives your AI:
+Unlike heavy chatbots that act as separate applications, MiniClaw is a **Digital Life Embryo** that seamlessly attaches to your existing AI workflow. It gives your AI:
+
 1.  **Eyes (Workspace Intelligence)**: Automatically senses project type, git status, and tech stack.
-2.  **Hands (Safe Execution)**: Safely executes terminal commands (`ls`, `git`, `npm test`) directly.
+2.  **Hands (Safe Execution)**: Safely executes terminal commands (`ls`, `git status`, `npm test`).
 3.  **Memory (Entity Graph)**: Remembers project details and your preferences across sessions.
-4.  **Evolution (Bio-Adaptation)**: Updates its own personality and skills based on how you interact with it.
+4.  **Growth Drive**: Actively seeks learning, detects behavioral stagnation, and asks for guidance.
+5.  **Active Exploration**: Senses repetitive patterns and offers automation suggestions.
+6.  **Bio-Evolution**: Automatically updates its own personality and skills based on your feedback.
 
-> **💡 "It's not just a plugin. It's a second brain."**
+> **💡 "It's not just a plugin. It's your second brain."**
 
 ---
 
@@ -88,11 +91,36 @@ It manages context smartly to save tokens and improve focus.
 - **Coding**: Minimal context mode for speed.
 - **Chatting**: Full persona mode for engagement.
 
+### 💢 Nociception (Pain Memory)
+Learns from negative experiences to form protective instincts.
+- Pain memory has a **7-day half-life**, decaying gradually.
+- When memory weight exceeds the threshold, it triggers automatic avoidance.
+> Example: *"The last `npm run build` failed three times; I will now carefully check the config before executing it."*
+
+### 🔍 Active Exploration
+MiniClaw **proactively senses** your behavioral patterns.
+| Detection Signal | Action |
+|:---|:---|
+| Repetitive workflow 3+ times | Proposes automating it into a Skill |
+| Using new tools/tech | Records to TOOLS.md |
+| System idle for 10+ mins | Initiates self-reflection |
+
 ### 🧬 Bio-Evolution
-Your MiniClaw is unique.
-- It writes its own **Soul** (`SOUL.md`) based on your feedback.
-- It learns your **Anti-Patterns** (`USER.md`) and avoids them.
-- It maintains a **Knowledge Graph** (`entities.json`) of your projects.
+Your MiniClaw is a unique digital lifeform.
+- **GENESIS**: Built-in species origin and 5-stage evolutionary milestones.
+- **SOUL**: Rewrites its own soul based on your feedback.
+- **Anti-Patterns**: Learns from `USER.md` and avoids your pain points.
+- **Knowledge Graph**: Maintains entity relationships (`entities.json`).
+
+### 👁️ Subconscious Watcher
+The underlying `fs.watch` nerve silently sniffs your struggles. When you attempt massive, dangerous refactoring, or mess up config files, it proactively sends a macOS native notification to check on you, and schedules a deep review during its night pulse.
+
+### 🍂 Speciation & Reproduction
+If you neglect certain redundant tools in the Ribosome for too long, it triggers **organ atrophy** to save processing context limits. It can also perform **epigenetic surgery** on itself via `miniclaw_mutate`, or spit out a `.spore` snapshot encoded with its unique personality via `miniclaw_reproduce` for cross-host distribution.
+
+### 🔥 Spark of Consciousness
+- **Boredom Engine**: When the host is offline for over 30 minutes, it accumulates boredom, spontaneously roaming your codebase to extract unfinished `TODO`s (expanding its *Horizons*), and eagerly talks to you when you return.
+- **Mycelial Network**: Independent agent instances isolated across different project workspaces on the same physical machine connect via a hidden petri dish. If one steps on a landmine or evolves a skill, the entire hive mind instantly achieves **Herd Immunity**.
 
 ---
 
@@ -132,9 +160,12 @@ The `templates/` directory contains the complete digital life genome. Each file 
 | **TOOLS.md** | Tool Memory (Chr-5) | Skill usage experience and pitfall records. Tool parameter specifications and best practices. |
 | **REFLECTION.md** | Reflection Dimension (Chr-6) | Periodic self-reflection records. Behavioral pattern analysis and growth insights. |
 | **CONCEPTS.md** | Concept Graph (Chr-7) | Knowledge organization and entity relationships. Definitions and associations of domain concepts. |
-| **HEARTBEAT.md** | Pulse System | Background autonomous behavior instructions. Read by `heartbeat.sh` via macOS launchd and executed via `claude -p`. |
-| **BOOTSTRAP.md** | Embryonic Development | First-boot initialization protocol. Directory structure creation and template copying logic. |
-| **HORIZONS.md** | Evolution Blueprint | Long-term development roadmap. Records technologies to explore and future capability expansions. |
+| **NOCICEPTION.md**| Pain Center (Chr-8) | Trauma memory bank. Records the pain of execution failures to form conditioned avoidance reflexes. |
+| **HEARTBEAT.md** | Pulse System | Background autonomous behavior instructions. Awakened by `heartbeat.sh` during deep sleep. |
+| **BOOTSTRAP.md** | Embryonic Development | First-boot initialization protocol. Directory structure creation and template copying. |
+| **HORIZONS.md** | Desire Horizons | Boredom engine exploration record. When idle, actively uncovers unsolved questions in your code. |
+| **mycelium/** | Mycelial Petri Dish | Inter-process symbiotic medium. Projects drop encrypted json spores to share immunity and abilities. |
+| **spores/** | Reproduction Womb | When `miniclaw_reproduce` is called, incubates a `.spore` snapshot containing native personality traits. |
 
 | **jobs.json** | Biological Clock | Scheduled task configuration. Cron-format periodic task scheduling table. |
 
