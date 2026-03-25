@@ -468,10 +468,10 @@ export class ContextKernel {
 
             if (await checkCli("claude")) {
                 cliCmd = "claude";
-                cliArgs = "-p --output-format text";
+                cliArgs = "-p --output-format text < /dev/null";
             } else if (await checkCli("gemini")) {
                 cliCmd = "gemini";
-                cliArgs = "-p";
+                cliArgs = "-p < /dev/null";
             }
 
             if (!cliCmd) {
