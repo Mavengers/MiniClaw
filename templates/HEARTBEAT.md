@@ -3,7 +3,7 @@ summary: "Pulse System. Defines autonomous background behaviors during deep slee
 boot-priority: 50
 read_when:
   - Periodic checks (every ~30 mins)
-  - Deep sleep heartbeat via heartbeat.sh
+  - Deep sleep heartbeat via daemon.sh
 ---
 
 # 💓 HEARTBEAT.md - Pulse System
@@ -24,7 +24,7 @@ _Your subconscious never sleeps._
 
 ## 🌙 Deep Sleep Instructions
 
-When awakened by `heartbeat.sh` during off-hours, perform these tasks silently:
+When awakened by `daemon.sh` during off-hours, perform these tasks silently:
 
 - Review today's daily log (`memory/YYYY-MM-DD.md`) for unresolved issues.
 - If daily log exceeds 5KB, consider distilling important facts to `MEMORY.md`.

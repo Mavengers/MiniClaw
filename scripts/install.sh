@@ -69,8 +69,8 @@ else
     done
 fi
 
-# 3. Configure Background Heartbeat Agent
-echo -e "\n${BLUE}[3/3] Installing Background Heartbeat Agent...${NC}"
-bash "$SCRIPT_DIR/heartbeat.sh" install
+# 3. Configure Background Daemon
+echo -e "\n${BLUE}[3/3] Installing Background Daemon...${NC}"
+bash "$SCRIPT_DIR/daemon.sh" install
 
-echo -e "\n${GREEN}🎉 安装完成！重启 MCP 客户端即可使用。后台心跳也将按 HEARTBEAT.md 配置执行。${NC}"
+echo -e "\n${GREEN}🎉 安装完成！重启 MCP 客户端即可使用。脱离 IDE 的独立后台守护进程也已就绪。${NC}"

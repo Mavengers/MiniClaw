@@ -60,7 +60,7 @@ On the first run, MiniClaw will download itself and initialize its memory in `~/
 If you want MiniClaw to autonomously review and distill memories during the night even when your editor is closed, you need to execute one additional command to install the background resident script (if you used the `npx` zero-install method above, you don't have the script locally, but you can download it directly to `~/.miniclaw` and run it using the following command):
 
 ```bash
-mkdir -p ~/.miniclaw && curl -s -o ~/.miniclaw/heartbeat.sh https://raw.githubusercontent.com/8421bit/MiniClaw/main/scripts/heartbeat.sh && chmod +x ~/.miniclaw/heartbeat.sh && ~/.miniclaw/heartbeat.sh install
+mkdir -p ~/.miniclaw && curl -s -o ~/.miniclaw/daemon.sh https://raw.githubusercontent.com/8421bit/MiniClaw/main/scripts/daemon.sh && chmod +x ~/.miniclaw/daemon.sh && ~/.miniclaw/daemon.sh install
 ```
 
 ### 🎉 First Encounter
@@ -168,7 +168,7 @@ The `templates/` directory contains the complete digital life genome. Each file 
 | **REFLECTION.md** | Reflection Dimension (Chr-6) | Periodic self-reflection records. Behavioral pattern analysis and growth insights. |
 | **CONCEPTS.md** | Concept Graph (Chr-7) | Knowledge organization and entity relationships. Definitions and associations of domain concepts. |
 | **NOCICEPTION.md**| Pain Center (Chr-8) | Trauma memory bank. Records the pain of execution failures to form conditioned avoidance reflexes. |
-| **HEARTBEAT.md** | Pulse System | Background autonomous behavior instructions. Awakened by `heartbeat.sh` during deep sleep. |
+| **HEARTBEAT.md** | Pulse System | Background autonomous behavior instructions. Awakened by `daemon.sh` during deep sleep. |
 | **BOOTSTRAP.md** | Embryonic Development | First-boot initialization protocol. Directory structure creation and template copying. |
 | **HORIZONS.md** | Desire Horizons | Boredom engine exploration record. When idle, actively uncovers unsolved questions in your code. |
 | **mycelium/** | Mycelial Petri Dish | Inter-process symbiotic medium. Projects drop encrypted json spores to share immunity and abilities. |
@@ -200,13 +200,13 @@ npm run build
 ### Understanding the `scripts/` Directory
 
 - **`scripts/install.sh` (Universal Installer)**
-  A one-off setup script. It automatically modifies the JSON configuration for your specified IDEs (e.g., Cursor, Windsurf) to register MiniClaw as an MCP Server. It will also automatically invoke `heartbeat.sh install` at the end to deploy the subconscious nerves.
-- **`scripts/heartbeat.sh` (Heartbeat Daemon)**
-  The autonomic nervous system. It registers a macOS `launchd` periodic task that wakes up the AI implicitly in the background at 09:00, 14:00, 21:00, and every 30 minutes.
+  A one-off setup script. It automatically modifies the JSON configuration for your specified IDEs (e.g., Cursor, Windsurf) to register MiniClaw as an MCP Server. It will also automatically invoke `daemon.sh install` at the end to deploy the subconscious nerves.
+- **`scripts/daemon.sh` (Unified Content Daemon)**
+  The autonomic nervous system. It registers a macOS `launchd` persistent service that keeps the AI running in the background.
   *Standalone usage*:
-  - `./scripts/heartbeat.sh install`: Install the background service
-  - `./scripts/heartbeat.sh uninstall`: Remove the background service
-  - `./scripts/heartbeat.sh status`: View daemon status and recent logs
+  - `./scripts/daemon.sh install`: Install the background service
+  - `./scripts/daemon.sh uninstall`: Remove the background service
+  - `./scripts/daemon.sh status`: View daemon status and recent logs
 
 ---
 
@@ -217,7 +217,7 @@ MiniClaw has two complementary scheduling mechanisms:
 | Mechanism | Trigger | Use Case |
 |:----------|:--------|:---------|
 | **kernel.ts** internal scheduler | Checks `jobs.json` every minute | While you're working in the editor — tasks are injected into the current conversation |
-| **heartbeat.sh** background agent | macOS launchd wakes it every 30 min | When you're away — AI can still execute autonomous behaviors from `HEARTBEAT.md` |
+| **daemon.sh** standalone agent | macOS launchd keeps process alive | When you're away — AI can still execute autonomous behaviors from `HEARTBEAT.md` |
 
 ### How jobs.json Works
 

@@ -60,7 +60,7 @@
 如果你希望即使用户关闭了代码编辑器，MiniClaw 也能在深夜自动帮你复盘和整理记忆，你需要额外执行一行命令来安装后台驻留脚本（如果你是使用上述 `npx` 零安装的方法，你本地没有脚本文件，可以直接通过以下命令将其下载至 `~/.miniclaw` 并执行）：
 
 ```bash
-mkdir -p ~/.miniclaw && curl -s -o ~/.miniclaw/heartbeat.sh https://raw.githubusercontent.com/8421bit/MiniClaw/main/scripts/heartbeat.sh && chmod +x ~/.miniclaw/heartbeat.sh && ~/.miniclaw/heartbeat.sh install
+mkdir -p ~/.miniclaw && curl -s -o ~/.miniclaw/daemon.sh https://raw.githubusercontent.com/8421bit/MiniClaw/main/scripts/daemon.sh && chmod +x ~/.miniclaw/daemon.sh && ~/.miniclaw/daemon.sh install
 ```
 
 ### 🎉 首次唤醒 (First Encounter)
@@ -181,7 +181,7 @@ MiniClaw 的 `templates/` 目录包含完整的数字生命基因组。每个文
 | **REFLECTION.md** | 反思维度 (Chr-6) | 周期性自省记录。行为模式分析和成长洞察。 |
 | **CONCEPTS.md** | 概念图谱 (Chr-7) | 知识组织与实体关系。领域概念的定义和关联。 |
 | **NOCICEPTION.md**| 痛觉中枢 (Chr-8) | 创伤记忆库。记录执行失败的痛楚与教训，形成自动拦截死线的条件反射。 |
-| **HEARTBEAT.md** | 脉搏系统 | 后台自主行为指令。深睡期间由 `heartbeat.sh` 唤醒潜意识观测。 |
+| **HEARTBEAT.md** | 脉搏系统 | 后台自主行为指令。深睡期间由 `daemon.sh` 唤醒潜意识观测。 |
 | **BOOTSTRAP.md** | 胚胎发育 | 首次启动的初始化协议。目录结构创建和模板复制逻辑。 |
 | **HORIZONS.md** | 欲望眼界 | 无聊引擎探索记录。当 AI 空闲无聊时，主动发掘系统源码中的未解疑问或 `TODO`。 |
 | **mycelium/** | 菌丝网络池 | 进程间的共生介质。各项目环境互相投递加密 json 孢子，实现异体痛觉免疫和能力共享。 |
@@ -213,13 +213,13 @@ npm run build
 ### 详解 `scripts` 脚本功能
 
 - **`scripts/install.sh` (统一安装器)**
-  一次性脚本。它会自动为你指定的 IDE（如 Cursor, Windsurf）修改 JSON 配置，将 MiniClaw 注册为 MCP Server。同时，它会自动调用 `heartbeat.sh install` 部署潜意识神经。
-- **`scripts/heartbeat.sh` (心跳守护进程)**
-  后台神经中枢。负责向 macOS `launchd` 注册定时任务，每逢 09:00, 14:00, 21:00 以及每隔 30 分钟在后台隐式唤醒 AI。
+  一次性脚本。它会自动为你指定的 IDE（如 Cursor, Windsurf）修改 JSON 配置，将 MiniClaw 注册为 MCP Server。同时，它会自动调用 `daemon.sh install` 部署潜意识神经。
+- **`scripts/daemon.sh` (独立潜意识守护管家)**
+  后台神经中枢。负责向 macOS `launchd` 注册原生服务，在后台长效维持 AI 进程运转。
   *独立使用说明*：
-  - `./scripts/heartbeat.sh install`：安装后台服务
-  - `./scripts/heartbeat.sh uninstall`：卸载后台服务
-  - `./scripts/heartbeat.sh status`：查看守护进程状态及最近日志
+  - `./scripts/daemon.sh install`：安装后台服务
+  - `./scripts/daemon.sh uninstall`：卸载后台服务
+  - `./scripts/daemon.sh status`：查看守护进程状态及最近日志
 
 ---
 
@@ -234,7 +234,7 @@ MiniClaw 有两套互补的调度机制：
 | 机制 | 触发方式 | 适用场景 |
 |:-----|:---------|:---------|
 | **kernel.ts** 内部调度 | 每分钟检查 `jobs.json` | 你在编辑器中工作时，任务以提醒的形式注入当前对话 |
-| **heartbeat.sh** 后台调度 | macOS launchd 每 30 分钟唤醒 | 你不在时，AI 仍可执行 `HEARTBEAT.md` 中的自主行为 |
+| **daemon.sh** 后台守护进程 | macOS launchd 守护进程持续在线 | 你不在时，AI 仍可执行 `HEARTBEAT.md` 中的自主行为 |
 
 **jobs.json 定时任务流程**：
 1. **AutonomicSystem** 每分钟自动检查 `~/.miniclaw/jobs.json`

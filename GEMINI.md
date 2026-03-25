@@ -45,5 +45,5 @@ The project uses `npm` for package management and `tsc` for building TypeScript.
   - `src/index.ts`: MCP protocol implementation and IPC.
   - `templates/`: Contains the "DNA" of the agent (e.g., `SOUL.md`, `USER.md`, `TOOLS.md`, `jobs.json`) which dictates behavior, memory, and scheduled tasks.
 - **Security:** Strict security measures are enforced for command execution. Only whitelisted commands (e.g., `git`, `ls`, `npm`) are allowed, while destructive commands (`rm`, `sudo`) and sensitive directories (`~/.ssh`, `.env`) are blocked.
-- **Task Scheduling:** Supports internal scheduling via `jobs.json` and background execution via macOS `launchd` and `scripts/heartbeat.sh`.
+- **Task Scheduling:** Supports internal scheduling via `jobs.json` and background execution via macOS `launchd` and `scripts/daemon.sh`.
 - **Deployment:** Always rebuild the project (`npm run build`) before pushing code to GitHub to ensure `dist/` is perfectly synced with `src/`.
