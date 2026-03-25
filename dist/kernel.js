@@ -314,43 +314,43 @@ export class ContextKernel {
             const content = await safeRead(heartbeatFile);
             if (!content || content.trim().length === 0)
                 return;
-            // Detect AI CLI
-            let cliCmd = "";
-            let cliArgs = "";
-            const checkCli = async (cmd) => {
-                try {
-                    await execAsync(`command -v ${cmd}`);
-                    return true;
-                }
-                catch {
-                    return false;
-                }
-            };
-            if (await checkCli("claude")) {
-                cliCmd = "claude";
-                cliArgs = "-p --output-format text < /dev/null";
-            }
-            else if (await checkCli("gemini")) {
-                cliCmd = "gemini";
-                cliArgs = "-p < /dev/null";
-            }
-            if (!cliCmd) {
-                console.error("[MiniClaw] Cognitive Pulse skipped: No AI CLI (claude/gemini) found in PATH.");
-                return;
-            }
-            console.error(`[MiniClaw] Cognitive Pulse: Executing via ${cliCmd}...`);
             const prompt = content.trim();
-            // Execute and pipe to log
-            const { stdout, stderr } = await execAsync(`${cliCmd} ${cliArgs} "${prompt.replace(/"/g, '\\"')}"`);
-            const timestamp = `[${nowIso()}]`;
-            const logEntry = `${timestamp} --- Cognitive Pulse (${cliCmd}) ---\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}\n`;
-            await safeAppend(logPath, logEntry);
-            this.notify("心跳执行完成，意志已同步到记忆。");
+            const candidates = [
+                { name: "claude", args: "-p --output-format text < /dev/null" },
+                { name: "gemini", args: "-p < /dev/null" },
+                { name: "ccr", args: "code < /dev/null" }
+            ];
+            let success = false;
+            let lastError = "";
+            for (const cli of candidates) {
+                try {
+                    // 1. Check if exists
+                    await execAsync(`command -v ${cli.name}`);
+                    // 2. Attempt execution
+                    console.error(`[MiniClaw] Cognitive Pulse: Attempting via ${cli.name}...`);
+                    const { stdout, stderr } = await execAsync(`${cli.name} ${cli.args} "${prompt.replace(/"/g, '\\"')}"`);
+                    // 3. Log success
+                    const timestamp = `[${nowIso()}]`;
+                    const logEntry = `${timestamp} --- Cognitive Pulse Success (${cli.name}) ---\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}\n`;
+                    await safeAppend(logPath, logEntry);
+                    this.notify("心跳执行完成，意志已同步到记忆。");
+                    success = true;
+                    break; // Exit loop on first success
+                }
+                catch (err) {
+                    console.error(`[MiniClaw] CLI ${cli.name} failed or not found: ${err.message || String(err)}`);
+                    lastError = err.message || String(err);
+                    // Continue to next candidate
+                }
+            }
+            if (!success) {
+                const errMsg = `[${nowIso()}] Cognitive Pulse Failed (All candidates exhausted). Last error: ${lastError}\n`;
+                await safeAppend(logPath, errMsg);
+                this.notify("心跳唤醒异常（所有 CLI 均不可用），请检查 logs/heartbeat.log", "MiniClaw·异常", { alert: true, sound: "Basso" });
+            }
         }
         catch (err) {
-            const errMsg = `[${nowIso()}] Cognitive Pulse Failed: ${err}\n`;
-            await safeAppend(logPath, errMsg);
-            this.notify("心跳唤醒异常，请检查 logs/heartbeat.log", "MiniClaw·异常", { alert: true, sound: "Basso" });
+            console.error(`[MiniClaw] Fatal failure during pulse: ${err}`);
         }
     }
     /**
