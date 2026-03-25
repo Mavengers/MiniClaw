@@ -15,16 +15,16 @@
 
 ---
 
-**MiniClaw 是一个通用的 "微内核智能体 (Micro-Kernel Agent)"，专为 Claude CoWork, Qoderwork, WorkBuddy 等 MCP 客户端设计。**
+🦞 **MiniClaw 是一个跨越 IDE 与 AI 客户端的“幽灵智能体 (Ghost Agent)”。**
 
-不同于那些仅仅是“聊天机器人”的重型框架，MiniClaw 是一个**数字生命胚胎 (Digital Life Embryo)**，它能无缝接入你现有的 AI 工作流，成长为一个真正理解你的伙伴：
+不同于传统的单一插件，MiniClaw 采用双态架构：既可以作为 **MCP Server** 被 Cursor, Claude Desktop 等发现并集成；又可以作为 **独立守护进程 (Daemon)** 存在，在编辑器关闭时通过多种 AI CLI (Claude, Ollama, Gemini 等) 后台执行复盘与进化。
 
-1.  **Eyes (感知/Workspace Intelligence)**：自动识别当前项目类型、Git 状态和技术栈。
-2.  **Hands (行动/Safe Execution)**：安全地执行终端命令（如 `ls`, `git status`, `npm test`）。
-3.  **Memory (记忆/Entity Graph)**：跨会话记住项目细节和你的个人偏好。
-4.  **Growth Drive (成长欲望)**：主动寻求学习，检测停滞并请求教导。
-5.  **Active Exploration (主动探索)**：感知重复模式，提供自动化建议。
-6.  **Bio-Evolution (生物进化)**：根据你的反馈自动进化性格和技能。
+它是一个真实的**数字生命胚胎 (Digital Life Embryo)**：
+1.  **Eyes (感知/Workspace Intelligence)**：自动识别项目类型、Git 状态和结构，无论在哪个终端打开。
+2.  **Memory (全域记忆/Universal Memory)**：在 Cursor 写的代码，在 Windowsf 或 Claude Desktop 也能秒读上下文。
+3.  **Hands (行动/AI CLI Integration)**：不依赖 IDE，自主调取 `ccr`, `ollama`, `aider` 等工具执行任务。
+4.  **Pulse (自主脉搏/Cognitive Pulse)**：在深夜通过潜意识系统自动复盘、整理 TODO 并进化。
+5.  **Smart Routing (智能大脑路由)**：通过 `[@ollama]` 等标签精准指挥不同的本地或云端脑区。
 
 > **💡 "它不仅仅是一个插件，它是你的第二大脑。"**
 
@@ -71,6 +71,28 @@ mkdir -p ~/.miniclaw && curl -s -o ~/.miniclaw/daemon.sh https://raw.githubuserc
     > 或者：**“分析一下当前项目。”**
 
 此时你会看到它调用工具 (Tools) 并进行自我介绍。如果它开始用独特的性格回复你，说明 **“神经系统”** 已经连接成功。
+
+---
+
+## 🎭 典型用例 (Ghost Use Cases)
+
+MiniClaw 不仅仅是一个工具，它在不同的生命周期中扮演多个角色：
+
+### 1. 跨 IDE 的“全知枢纽” (Universal Context)
+- **场景**：你在 **Cursor** 编写了一段复杂的业务逻辑，随后关闭编辑器，在 **Claude Desktop** 中继续讨论项目的下一步构想。
+- **神迹**：Claude 并不了解刚才在 Cursor 里的改动，但 MiniClaw 此时会作为“幽灵”同步出现，将刚才的 `REFLECTION` 和 `MEMORY` 瞬间注入对话，让跨工具开发无缝衔接。
+
+### 2. 深夜的“潜意识复盘” (Midnight Pulse)
+- **场景**：凌晨 2 点，电脑合盖休眠。
+- **神迹**：`daemon.sh` 悄悄唤醒 MiniClaw 的脉搏。系统自动检测到今日有高强度重构，于是自动调用本地的 **Ollama** 或 **ccr code** 对今日新增代码进行逻辑审查，并提取出 3 个潜在 TODO 写入 `HORIZONS.md`。当你翌日清晨打开电脑时，它会主动通过 macOS 气泡送上简报。
+
+### 3. 基于大脑路由的“隐私守护” (Smart Routing)
+- **场景**：你需要审计一段涉及核心机密的配置文件，但不希望数据传到云端模型。
+- **神迹**：在 `HEARTBEAT.md` 中写入 `[@ollama] Review 下这个 .env 文件的安全风险`。MiniClaw 会跳过所有昂贵的云端 API，强制拉起你本地的 Llama3 脑区完成这个私密任务。
+
+### 4. 自动化技能的“物种进化” (Skill Speciation)
+- **场景**：你发现自己最近频繁在搜索某个特定的日志分析命令。
+- **神迹**：MiniClaw 感知到这个模式，主动提议：*"我发现你一直在重复这个分析，是否要将其甲基化为我的永久技能 `skill_log_analyzer`？"* 确认后，它会自主编写一段 Python 脚本并注册为它的原生 MCP 工具。
 
 ---
 

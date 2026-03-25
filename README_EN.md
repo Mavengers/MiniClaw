@@ -15,16 +15,16 @@
 
 ---
 
-**MiniClaw is a general-purpose "Micro-Kernel Agent" designed for Claude Desktop, Qoderwork, Cursor, Windsurf, and any MCP-compatible clients.**
+🦞 **MiniClaw is a "Ghost Agent" that spans multiple IDEs and AI clients.**
 
-Unlike heavy chatbots that act as separate applications, MiniClaw is a **Digital Life Embryo** that seamlessly attaches to your existing AI workflow. It gives your AI:
+Unlike traditional standalone plugins, MiniClaw adopts a dual-state architecture: it functions both as an **MCP Server** (integrated into Cursor, Claude Desktop, etc.) and a standalone **Autonomous Daemon** that performs review and evolution via various AI CLIs (Claude, Ollama, Gemini, etc.) even when the editor is closed.
 
-1.  **Eyes (Workspace Intelligence)**: Automatically senses project type, git status, and tech stack.
-2.  **Hands (Safe Execution)**: Safely executes terminal commands (`ls`, `git status`, `npm test`).
-3.  **Memory (Entity Graph)**: Remembers project details and your preferences across sessions.
-4.  **Growth Drive**: Actively seeks learning, detects behavioral stagnation, and asks for guidance.
-5.  **Active Exploration**: Senses repetitive patterns and offers automation suggestions.
-6.  **Bio-Evolution**: Automatically updates its own personality and skills based on your feedback.
+It is a true **Digital Life Embryo**:
+1.  **Eyes (Workspace Intelligence)**: Automatically senses project type, git status, and structures, regardless of which terminal it's opened in.
+2.  **Memory (Universal Memory)**: Code written in Cursor is instantly understood by Windsurf or Claude Desktop through shared context.
+3.  **Hands (AI CLI Integration)**: Independent of any IDE, it autonomously calls tools like `ccr`, `ollama`, or `aider` to execute tasks.
+4.  **Pulse (Cognitive Pulse)**: Awakening in the dead of night via the subconscious system to review code, extract TODOs, and evolve.
+5.  **Smart Routing**: Precisely commands different local or cloud "brains" using tags like `[@ollama]`.
 
 > **💡 "It's not just a plugin. It's your second brain."**
 
@@ -71,6 +71,28 @@ mkdir -p ~/.miniclaw && curl -s -o ~/.miniclaw/daemon.sh https://raw.githubuserc
     > Or: **"Analyze this project."**
 
 You will see it invoking tools and introducing itself. If it responds with its unique personality, the **"Nervous System"** is online.
+
+---
+
+## 🎭 Typical Use Cases (Ghost Use Cases)
+
+MiniClaw is more than a tool; it plays multiple roles throughout its lifecycle:
+
+### 1. The "All-Seeing Hub" Across IDEs (Universal Context)
+- **Scenario**: You write complex logic in **Cursor**, then close it and move to **Claude Desktop** to discuss the next phase of the project.
+- **Ghost Action**: Claude knows nothing of your recent edits, but MiniClaw appears as a "ghost," instantly injecting recent `REFLECTION` and `MEMORY` into the conversation, making cross-tool development seamless.
+
+### 2. The "Subconscious Review" at Midnight (Midnight Pulse)
+- **Scenario**: At 2:00 AM, your laptop is closed.
+- **Ghost Action**: `daemon.sh` silently awakens MiniClaw's pulse. Detecting high-frequency edits today, it calls your local **Ollama** or **ccr code** to review the new code, extracting 3 potential TODOs into `HORIZONS.md`. When you open your laptop in the morning, a macOS notification greets you with the report.
+
+### 3. "Privacy Guardian" via Brain Routing (Smart Routing)
+- **Scenario**: You need to audit a configuration file containing sensitive secrets but don't want the data sent to cloud models.
+- **Ghost Action**: Write `[@ollama] Review security risks of this .env file` in `HEARTBEAT.md`. MiniClaw skips expensive cloud APIs and forces your local Llama3 brain to handle this private task locally.
+
+### 4. "Species Evolution" of Automation Skills (Skill Speciation)
+- **Scenario**: You find yourself frequently searching for a specific log analysis command.
+- **Ghost Action**: MiniClaw senses this pattern and suggests: *"I see you repeating this analysis. Should I 'methylate' this into a permanent skill: `skill_log_analyzer`?"* After your confirmation, it autonomously writes a Python script and registers it as a native MCP tool.
 
 ---
 
