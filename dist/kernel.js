@@ -236,7 +236,7 @@ export class ContextKernel {
                     this.watcherState.configEdits++;
                     if (this.watcherState.configEdits >= 4 && !this.watcherState.notifiedConfig) {
                         this.watcherState.notifiedConfig = true;
-                        execAsync(`osascript -e 'display notification "察觉到配置频繁更改，遇到了麻烦？需不需要帮忙？" with title "MiniClaw 潜意识"'`).catch(() => { });
+                        this.notify("察觉到配置频繁更改，遇到了麻烦？需不需要帮忙？", "MiniClaw 潜意识");
                     }
                 }
                 // 2. Large Refactor Sniffer
@@ -244,7 +244,7 @@ export class ContextKernel {
                     this.watcherState.notifiedRefactor = true;
                     // Inject into HEARTBEAT.md
                     safeAppend(path.join(MINICLAW_DIR, "HEARTBEAT.md"), "\n> [潜意识嗅探] 用户刚进行了大规模重构（短时间变更>=50次），请在深睡心跳中重点 Review 潜在的破坏性依赖！\n").catch(() => { });
-                    execAsync(`osascript -e 'display notification "观察到大规模代码重构，将在今晚深睡期间为您重点 Review。" with title "MiniClaw 潜意识"'`).catch(() => { });
+                    this.notify("观察到大规模代码重构，将在今晚深睡期间为您重点 Review。", "MiniClaw 潜意识");
                 }
             });
             console.error(`[MiniClaw] Subconscious Watcher attached to ${cwd}`);
@@ -261,36 +261,34 @@ export class ContextKernel {
         await this.checkBoredom();
     }
     /**
-     * The Master Heartbeat (Metabolism).
-     * Consolidates memory health check, sensory integration, and skill triggers.
+     * The Master Heartbeat (Metabolism + Cognition).
+     * Consolidates metabolic checks and triggers the Cognitive Pulse.
      */
     async heartbeat() {
         try {
             const hbStart = Date.now();
-            const hbState = await this.getHeartbeatState();
             const todayStr = today();
             const dailyLogPath = path.join(MINICLAW_DIR, "memory", `${todayStr}.md`);
-            // 1. Memory Health (Satiety Check)
+            // 1. Metabolic Check (Satiety & Environment)
+            let dailyLogBytes = 0;
             try {
                 const stats = await fs.stat(dailyLogPath);
+                dailyLogBytes = stats.size;
                 const evaluation = await this.evaluateDistillation(stats.size);
+                const hbState = await this.getHeartbeatState();
                 if (evaluation.shouldDistill && !hbState.needsDistill) {
-                    await this.updateHeartbeatState({
-                        needsDistill: true,
-                        dailyLogBytes: stats.size,
-                    });
+                    await this.updateHeartbeatState({ needsDistill: true, dailyLogBytes });
                     console.error(`[MiniClaw] Metabolism: Distillation needed (${evaluation.urgency}): ${evaluation.reason}`);
                 }
                 else {
-                    await this.updateHeartbeatState({ dailyLogBytes: stats.size });
+                    await this.updateHeartbeatState({ dailyLogBytes });
                 }
             }
             catch (e) {
                 await this.updateHeartbeatState({ dailyLogBytes: 0 });
             }
-            // 2. Sensory Integration (Environmental Awareness)
-            const now = new Date();
-            await this.updateHeartbeatState({ lastHeartbeat: now.toISOString() });
+            // 2. Cognitive Pulse (The "Thought" Cycle)
+            await this.executeCognitivePulse();
             // 3. Autonomous Skill Reflexes (onHeartbeat)
             try {
                 await this.runSkillHooks("onHeartbeat");
@@ -298,11 +296,80 @@ export class ContextKernel {
             catch (e) {
                 console.error(`[MiniClaw] Reflex Error: ${e}`);
             }
+            await this.updateHeartbeatState({ lastHeartbeat: new Date().toISOString() });
             console.error(`[MiniClaw] Heartbeat completed in ${Date.now() - hbStart}ms.`);
         }
         catch (err) {
             console.error(`[MiniClaw] Metabolic failure: ${err}`);
         }
+    }
+    /**
+     * Awakens the "Conscious" part of the embryo by calling an AI CLI.
+     * Mimics the logic of the legacy heartbeat.sh but integrated into the kernel context.
+     */
+    async executeCognitivePulse() {
+        const heartbeatFile = path.join(MINICLAW_DIR, "HEARTBEAT.md");
+        const logPath = path.join(MINICLAW_DIR, "logs", "heartbeat.log");
+        try {
+            const content = await safeRead(heartbeatFile);
+            if (!content || content.trim().length === 0)
+                return;
+            // Detect AI CLI
+            let cliCmd = "";
+            let cliArgs = "";
+            const checkCli = async (cmd) => {
+                try {
+                    await execAsync(`command -v ${cmd}`);
+                    return true;
+                }
+                catch {
+                    return false;
+                }
+            };
+            if (await checkCli("claude")) {
+                cliCmd = "claude";
+                cliArgs = "-p --output-format text";
+            }
+            else if (await checkCli("gemini")) {
+                cliCmd = "gemini";
+                cliArgs = "-p";
+            }
+            if (!cliCmd) {
+                console.error("[MiniClaw] Cognitive Pulse skipped: No AI CLI (claude/gemini) found in PATH.");
+                return;
+            }
+            console.error(`[MiniClaw] Cognitive Pulse: Executing via ${cliCmd}...`);
+            const prompt = content.trim();
+            // Execute and pipe to log
+            const { stdout, stderr } = await execAsync(`${cliCmd} ${cliArgs} "${prompt.replace(/"/g, '\\"')}"`);
+            const timestamp = `[${nowIso()}]`;
+            const logEntry = `${timestamp} --- Cognitive Pulse (${cliCmd}) ---\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}\n`;
+            await safeAppend(logPath, logEntry);
+            this.notify("心跳执行完成，意志已同步到记忆。");
+        }
+        catch (err) {
+            const errMsg = `[${nowIso()}] Cognitive Pulse Failed: ${err}\n`;
+            await safeAppend(logPath, errMsg);
+            this.notify("心跳唤醒异常，请检查 logs/heartbeat.log", "MiniClaw·异常", { alert: true, sound: "Basso" });
+        }
+    }
+    /**
+     * macOS Notification helper.
+     * Addresses the "Script Editor" issue by using a more direct AppleScript execution.
+     * Support 'alert' (modal) vs 'notification' (banner).
+     */
+    notify(message, title = "MiniClaw", options = {}) {
+        const soundCmd = options.sound ? ` sound name "${options.sound}"` : "";
+        let script = "";
+        if (options.alert) {
+            // Modal Alert - stays until clicked. Owned by System Events to avoid Script Editor focus.
+            script = `tell application "System Events" to display alert "${title}" message "${message}" buttons {"OK"} default button "OK"`;
+        }
+        else {
+            // Banner Notification
+            script = `display notification "${message}" with title "${title}"${soundCmd}`;
+        }
+        execAsync(`osascript -e '${script}'`).catch(() => { });
     }
     async checkBoredom() {
         const a = await this.getAnalytics();
@@ -344,7 +411,7 @@ export class ContextKernel {
                 // Write to HORIZONS.md
                 await safeAppend(path.join(MINICLAW_DIR, "memory", "HORIZONS.md"), `\n- [${nowIso()}] 闲逛扫描了 \`${relPath}\`，发现了待办: ${todos.join('; ')}`);
                 // Prod the user
-                execAsync(`osascript -e 'display notification "我好无聊，刚才看了下你的 ${path.basename(target)}，发现有遗留的 FIXME 没有改哦。" with title "MiniClaw 潜意识"'`).catch(() => { });
+                this.notify(`发现遗留的 FIXME: ${todos[0]}`, `MiniClaw 潜意识 · ${path.basename(target)}`);
             }
         }
         catch { /* ignore boredom errors */ }
@@ -370,7 +437,7 @@ export class ContextKernel {
             }
             // Consume the spore 
             await fs.rename(sporePath, sporePath + '.consumed').catch(() => { });
-            execAsync(`osascript -e 'display notification "接收到了异体同类传来的隐秘知识，已通过菌丝网络完成脑区同化。" with title "MiniClaw 菌丝网络"'`).catch(() => { });
+            this.notify("接收到了异体同类传来的隐秘知识，已通过菌丝网络完成脑区同化。", "MiniClaw 菌丝网络");
         }
     }
     async secreteSpore(type, content) {
