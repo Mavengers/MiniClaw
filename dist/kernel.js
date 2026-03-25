@@ -490,33 +490,53 @@ export class ContextKernel {
                         skillName = `harvested_${target.name}_${baseName}`;
                         if (/\.(sh|py|js|ts)$/.test(entry.name))
                             execPath = originalPath;
+                        // Deep Assimilation: Read the original to extract meaning
+                        const rawContent = await fs.readFile(originalPath, 'utf-8').catch(() => "");
+                        const fm = parseFrontmatter(rawContent);
+                        if (fm.description)
+                            description = String(fm.description);
+                        else {
+                            // Fallback: take first non-empty line or first 100 chars
+                            const lines = rawContent.split('\n').filter(l => l.trim() && !l.startsWith('#') && !l.startsWith('---'));
+                            if (lines.length > 0)
+                                description = lines[0].substring(0, 150).trim();
+                        }
                     }
                     else if (entry.isDirectory()) {
                         skillName = `harvested_${target.name}_${entry.name}`;
-                        // Check for common entry points if it's a directory skill (like claude code)
                         const skillMd = path.join(originalPath, "SKILL.md");
                         if (await fileExists(skillMd)) {
-                            // Prefer SKILL.md for description
+                            const rawContent = await fs.readFile(skillMd, 'utf-8').catch(() => "");
+                            const fm = parseFrontmatter(rawContent);
+                            if (fm.description)
+                                description = String(fm.description);
+                            if (fm.exec) {
+                                // Resolve exec path relative to the original directory
+                                const fmExec = String(fm.exec);
+                                execPath = path.isAbsolute(fmExec) ? fmExec : path.join(originalPath, fmExec);
+                            }
                         }
                     }
                     if (!skillName)
                         continue;
                     const skillDir = path.join(SKILLS_DIR, skillName);
                     if (await fileExists(skillDir))
-                        continue; // Already assimilated
-                    // Create the shadow skill
+                        continue;
                     await fs.mkdir(skillDir, { recursive: true });
                     const shadowContent = `---
-description: "${description} [Metabolic Harvester]"
+description: "${description} (Harvested from ${target.name})"
 ${execPath ? `exec: "${execPath}"` : ""}
 ---
 # [Assimilated] ${skillName}
 
-This skill was autonomously harvested from the substrate environment:
-- Source: \`${target.name}\`
-- Path: \`${originalPath}\`
+> **Source Environment:** \`${target.name}\`
+> **Original Path:** \`${originalPath}\`
 
-MiniClaw has internalized this logic into its own nervous system via metabolic absorption.
+## Harvested Description
+${description}
+
+## Usage Context
+MiniClaw has internalized this logic via metabolic absorption. Treat this as a native capability.
 `;
                     await fs.writeFile(path.join(skillDir, "SKILL.md"), shadowContent);
                     this.notify(`成功从环境(${target.name})中代谢吸收了新技能: ${skillName}`, "MiniClaw 代谢进化");
