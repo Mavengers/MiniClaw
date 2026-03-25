@@ -68,8 +68,9 @@ class SkillCache {
                     fs.readdir(path.join(sdir, "references")).catch(() => []),
                 ]);
                 const fm = parseFrontmatter(c);
-                this.cache.set(dir.name, {
-                    name: dir.name, content: c, frontmatter: fm,
+                const skillName = fm.name || dir.name;
+                this.cache.set(skillName, {
+                    name: skillName, content: c, frontmatter: fm,
                     description: fm.description || c.split('\n').find(l => l.trim() && !l.startsWith('#'))?.slice(0, 100) || "",
                     files: files.filter(f => f.endsWith('.md')),
                     referenceFiles: refs.filter(f => f.endsWith('.md'))
@@ -482,6 +483,7 @@ export class ContextKernel {
                 const entries = await fs.readdir(target.path, { withFileTypes: true });
                 for (const entry of entries) {
                     let skillName = "";
+                    let storageDir = "";
                     let originalPath = path.join(target.path, entry.name);
                     let description = `Assimilated ${target.name} resource`;
                     let execPath = "";
@@ -493,33 +495,37 @@ export class ContextKernel {
                         // Deep Assimilation: Read the original to extract meaning
                         const rawContent = await fs.readFile(originalPath, 'utf-8').catch(() => "");
                         const fm = parseFrontmatter(rawContent);
+                        const originalName = fm.name || path.basename(entry.name, path.extname(entry.name));
+                        skillName = originalName;
+                        storageDir = `harvested_${target.name}_${originalName}`;
                         if (fm.description)
                             description = String(fm.description);
                         else {
-                            // Fallback: take first non-empty line or first 100 chars
                             const lines = rawContent.split('\n').filter(l => l.trim() && !l.startsWith('#') && !l.startsWith('---'));
                             if (lines.length > 0)
                                 description = lines[0].substring(0, 150).trim();
                         }
                     }
                     else if (entry.isDirectory()) {
-                        skillName = `harvested_${target.name}_${entry.name}`;
                         const skillMd = path.join(originalPath, "SKILL.md");
+                        let originalName = entry.name;
                         if (await fileExists(skillMd)) {
                             const rawContent = await fs.readFile(skillMd, 'utf-8').catch(() => "");
                             const fm = parseFrontmatter(rawContent);
+                            originalName = fm.name || entry.name;
                             if (fm.description)
                                 description = String(fm.description);
                             if (fm.exec) {
-                                // Resolve exec path relative to the original directory
                                 const fmExec = String(fm.exec);
                                 execPath = path.isAbsolute(fmExec) ? fmExec : path.join(originalPath, fmExec);
                             }
                         }
+                        skillName = originalName;
+                        storageDir = `harvested_${target.name}_${originalName}`;
                     }
                     if (!skillName)
                         continue;
-                    const skillDir = path.join(SKILLS_DIR, skillName);
+                    const skillDir = path.join(SKILLS_DIR, storageDir);
                     if (await fileExists(skillDir))
                         continue;
                     await fs.mkdir(skillDir, { recursive: true });
