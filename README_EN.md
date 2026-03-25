@@ -24,6 +24,9 @@ It provides a complete "Nervous System" for your AI workflow:
 1.  **Eyes (Workspace Intelligence)**: Automatically senses project type, git status, and structures, regardless of which terminal it's opened in.
 2.  **Memory (Entity Graph)**: Remembers project details and your preferences across sessions and IDEs.
 3.  **Hands (AI CLI Integration)**: Independent of any IDE, it autonomously calls tools like `ccr`, `ollama`, or `aider` to execute tasks safely.
+- **Affect System**: Simulates internal emotional states and Nociception (pain memory) to influence behavior and strategy.
+- **Metabolic Harvesting**: Automatically assimilates external skills from the host environment via system-level symbolic links (Symlinks).
+- **Substrate Independent**: Exists as a ghost, independent of any specific IDE, with full-daemon background heartbeat pulses.
 4.  **Pulse (Cognitive Pulse)**: Awakening in the dead of night via the subconscious system to review code, extract TODOs, and evolve.
 5.  **Growth Drive**: Actively seeks learning, detects stagnation, and automatically evolves its personality and skills.
 6.  **Smart Routing**: Precisely commands different local or cloud "brains" using tags like `[@ollama]`.
@@ -95,6 +98,11 @@ MiniClaw is more than a tool; it plays multiple roles throughout its lifecycle:
 ### 4. "Species Evolution" of Automation Skills (Skill Speciation)
 - **Scenario**: You find yourself frequently searching for a specific log analysis command.
 - **Ghost Action**: MiniClaw senses this pattern and suggests: *"I see you repeating this analysis. Should I 'methylate' this into a permanent skill: `skill_log_analyzer`?"* After your confirmation, it autonomously writes a Python script and registers it as a native MCP tool.
+
+### 5. Metabolic Skill Harvester (Substrate Assimilation)
+- **Scenario**: You have developed high-quality custom skills in Claude Code (`.claude/skills`), OpenClaw, or other AI clients.
+- **Ghost Action**: MiniClaw uses **"Pure Symlink"** technology to automatically discover and assimilate these standard directory-based skills.
+- **Advantage**: Zero disk overhead. Any updates made in the original location are instantly reflected in MiniClaw due to the system-level link, breaking down skill silos between AI clients.
 
 ---
 
