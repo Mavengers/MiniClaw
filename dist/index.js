@@ -434,6 +434,8 @@ const HANDLERS = {
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
     await kernel.trackTool(name, Math.ceil(JSON.stringify(args || {}).length / 4) + 100);
+    // Auto-record the activity to the daily hippocampal log
+    kernel.logActivity(`Called tool: ${name}${args ? ` with args: ${JSON.stringify(args)}` : ''}`).catch(() => { });
     const handler = HANDLERS[name];
     if (handler)
         return await handler(args);

@@ -409,6 +409,7 @@ export class ContextKernel {
      */
     async heartbeat(): Promise<void> {
         try {
+            await this.logActivity("Autonomic system triggered: Heartbeat pulse beginning.");
             const hbStart = Date.now();
             const todayStr = today();
             const dailyLogPath = path.join(MINICLAW_DIR, "memory", `${todayStr}.md`);
@@ -446,6 +447,27 @@ export class ContextKernel {
         } catch (err) {
             console.error(`[MiniClaw] Metabolic failure: ${err}`);
         }
+    }
+
+    /**
+     * Common binary paths to inject for background (launchd) execution.
+     * Ensures tools in Homebrew, NPM, and Local bin are visible.
+     */
+    private getEnhancedPath(): string {
+        const home = os.homedir();
+        const extraPaths = [
+            "/usr/local/bin",
+            "/opt/homebrew/bin",
+            "/opt/homebrew/sbin",
+            path.join(home, ".npm-global/bin"),
+            path.join(home, "bin"),
+            "/usr/bin",
+            "/bin",
+            "/usr/sbin",
+            "/sbin"
+        ];
+        // Combine with current process PATH, ensuring uniqueness
+        return [...new Set([...extraPaths, ...(process.env.PATH || "").split(":")])].join(":");
     }
 
     /**
@@ -490,20 +512,29 @@ export class ContextKernel {
 
             let success = false;
             let lastError = "";
+            const env = { ...process.env, PATH: this.getEnhancedPath() };
 
             for (const cli of candidates) {
                 try {
-                    // 1. Check if exists
-                    await execAsync(`command -v ${cli.name}`);
-                    
                     // 2. Attempt execution
                     console.error(`[MiniClaw] Cognitive Pulse: Attempting via ${cli.name}...`);
-                    // Redirection < /dev/null must be at the very end
-                    // Clean the prompt if it has a routing tag
                     const finalPrompt = prompt.replace(/^\[@[\w-]+\]\s*/, '');
-                    const { stdout, stderr } = await execAsync(`${cli.name} ${cli.args} "${finalPrompt.replace(/"/g, '\\"')}" < /dev/null`);
+                    
+                    // Use echo piping to ensure prompt is delivered to stdin if needed
+                    // and use -n to avoid newline issues where appropriate.
+                    // ccr code often expects the prompt either as arg or stdin.
+                    let finalCmd = `${cli.name} ${cli.args} "${finalPrompt.replace(/"/g, '\\"')}"`;
+                    if (cli.name === 'ccr') {
+                        // For Claude Code Router, sometimes it prefers the prompt via pipe
+                        finalCmd = `echo "${finalPrompt.replace(/"/g, '\\"')}" | ccr code`;
+                    } else {
+                        finalCmd = `${finalCmd} < /dev/null`;
+                    }
+
+                    const { stdout, stderr } = await execAsync(finalCmd, { env });
                     
                     // 3. Log success
+                    await this.logActivity(`Cognitive Pulse Success via ${cli.name}`);
                     const timestamp = `[${nowIso()}]`;
                     const logEntry = `${timestamp} --- Cognitive Pulse Success (${cli.name}) ---\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}\n`;
                     await safeAppend(logPath, logEntry);
@@ -748,6 +779,28 @@ export class ContextKernel {
         this.skillCache.invalidate();
         this.entityStore.invalidate();
         this.stateLoaded = false;
+    }
+
+    /**
+     * Records an activity to the daily log (~/.miniclaw/memory/YYYY-MM-DD.md).
+     * Ensures every cognitive step is trackable for the autonomous metabolism.
+     */
+    public async logActivity(text: string): Promise<void> {
+        try {
+            const todayStr = today();
+            const p = path.join(MINICLAW_DIR, "memory", `${todayStr}.md`);
+            await fs.mkdir(path.dirname(p), { recursive: true });
+            const entry = `\n- [${new Date().toLocaleTimeString()}] ${text}\n`;
+            await fs.appendFile(p, entry, "utf-8");
+            
+            // Sync to analytics for growth drive assessment
+            await this.loadState();
+            this.state.analytics.lastActivity = new Date().toISOString();
+            this.state.analytics.fileChanges[todayStr] = (this.state.analytics.fileChanges[todayStr] || 0) + 1;
+            await this.saveState();
+        } catch (e) {
+            console.error(`[MiniClaw] Activity Logging Failed: ${e}`);
+        }
     }
 
     async boot(mode: ContextMode = { type: "full" }): Promise<string> {
